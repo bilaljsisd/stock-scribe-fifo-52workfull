@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { StockOutput } from "@/types/supabase";
 import { toast } from "sonner";
@@ -425,5 +424,36 @@ async function updateProductStock(productId: string): Promise<void> {
   } catch (error) {
     console.error('Error updating product stock:', error);
     throw error;
+  }
+}
+
+// Add this new function to fetch stock output lines with related entry data
+export async function getStockOutputLines(stockOutputId: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('stock_output_lines')
+      .select(`
+        id,
+        stock_output_id,
+        stock_entry_id,
+        quantity,
+        unit_price,
+        stock_entry:stock_entry_id (
+          id,
+          entry_date,
+          supplier,
+          invoice_number
+        )
+      `)
+      .eq('stock_output_id', stockOutputId)
+      .order('id');
+    
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching stock output lines:', error);
+    toast.error('Failed to load stock output details');
+    return [];
   }
 }

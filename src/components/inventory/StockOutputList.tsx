@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Product, StockOutput } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Edit, Package, Printer } from "lucide-react";
+import { Edit, Eye, Package, Printer } from "lucide-react";
 import { getStockOutputsForProduct } from "@/services/stockOutputService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { EditStockOutputDialog } from "./EditStockOutputDialog";
+import { ViewStockOutputDetailsDialog } from "./ViewStockOutputDetailsDialog";
 
 interface StockOutputListProps {
   product: Product;
@@ -18,6 +18,7 @@ export function StockOutputList({ product }: StockOutputListProps) {
   const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingOutput, setEditingOutput] = useState<StockOutput | null>(null);
+  const [viewingOutput, setViewingOutput] = useState<StockOutput | null>(null);
   
   useEffect(() => {
     loadStockOutputs();
@@ -108,6 +109,10 @@ export function StockOutputList({ product }: StockOutputListProps) {
     setEditingOutput(output);
   };
   
+  const handleViewDetails = (output: StockOutput) => {
+    setViewingOutput(output);
+  };
+  
   if (loading) {
     return (
       <Card>
@@ -174,6 +179,14 @@ export function StockOutputList({ product }: StockOutputListProps) {
                     <Button 
                       variant="ghost" 
                       size="icon" 
+                      onClick={() => handleViewDetails(output)}
+                      title="See FIFO Details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
                       onClick={() => handlePrint(output)}
                       title="Print"
                     >
@@ -202,6 +215,12 @@ export function StockOutputList({ product }: StockOutputListProps) {
             onSuccess={loadStockOutputs}
           />
         )}
+        
+        <ViewStockOutputDetailsDialog
+          stockOutput={viewingOutput}
+          open={!!viewingOutput}
+          onOpenChange={(open) => !open && setViewingOutput(null)}
+        />
       </CardContent>
     </Card>
   );
