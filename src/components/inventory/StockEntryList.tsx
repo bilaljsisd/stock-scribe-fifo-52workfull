@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, StockEntry } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,18 +13,25 @@ interface StockEntryListProps {
 export function StockEntryList({ product }: StockEntryListProps) {
   const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadStockEntries() {
-      setLoading(true);
-      const entries = await getStockEntriesForProduct(product.id);
-      setStockEntries(entries);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null); // Reset any previous errors
+        const entries = await getStockEntriesForProduct(product.id);
+        setStockEntries(entries);
+      } catch (err) {
+        setError("Error loading stock entries. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
     
     loadStockEntries();
   }, [product.id]);
-  
+
   if (loading) {
     return (
       <Card>
@@ -40,7 +46,23 @@ export function StockEntryList({ product }: StockEntryListProps) {
       </Card>
     );
   }
-  
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Stock Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <h3 className="text-lg font-medium">Error</h3>
+            <p className="text-sm">{error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (stockEntries.length === 0) {
     return (
       <Card>
@@ -59,7 +81,7 @@ export function StockEntryList({ product }: StockEntryListProps) {
       </Card>
     );
   }
-  
+
   return (
     <Card>
       <CardHeader>
