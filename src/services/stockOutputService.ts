@@ -28,21 +28,31 @@ export async function createStockOutput(
   notes?: string
 ): Promise<StockOutput | null> {
   try {
-    // This function would call a Supabase function or RPC that handles the FIFO logic
-    // For now we use update_product_stock_and_cost as placeholder since create_stock_output doesn't exist
-    const { data: functionData, error: functionError } = await supabase.rpc('update_product_stock_and_cost', {
-      product_id: productId
-    });
+    // Get available stock entries using FIFO order (oldest first)
+    const { data: entriesData, error: entriesError } = await supabase
+      .from('stock_entries')
+      .select('*')
+      .eq('product_id', productId)
+      .gt('remaining_quantity', 0)
+      .order('entry_date', { ascending: true });
     
-    if (functionError) throw functionError;
+    if (entriesError) throw entriesError;
     
-    // Insert the stock output record
-    const { data, error } = await supabase
+    const entries = entriesData || [];
+    const totalAvailable = entries.reduce((sum, entry) => sum + entry.remaining_quantity, 0);
+    
+    if (totalAvailable < quantity) {
+      toast.error(`Insufficient stock. Only ${totalAvailable} units available.`);
+      return null;
+    }
+    
+    // Insert the stock output record first
+    const { data: outputData, error: outputError } = await supabase
       .from('stock_outputs')
       .insert({
         product_id: productId,
         total_quantity: quantity,
-        total_cost: 0, // Will be calculated based on FIFO allocation
+        total_cost: 0, // Will calculate based on actual allocations
         output_date: outputDate,
         reference_number: referenceNumber || null,
         notes: notes || null
@@ -50,19 +60,67 @@ export async function createStockOutput(
       .select()
       .single();
     
-    if (error) throw error;
+    if (outputError) throw outputError;
     
-    // Update stock and cost after creating the output
-    await supabase.rpc('update_product_stock_and_cost', {
-      product_id: productId
-    });
-    
-    if (data) {
-      toast.success(`${quantity} units withdrawn successfully`);
-      return data;
+    if (!outputData) {
+      throw new Error("Failed to create stock output");
     }
     
-    return null;
+    // Allocate stock from entries using FIFO
+    let remainingToAllocate = quantity;
+    let totalCost = 0;
+    const outputLines = [];
+    
+    for (const entry of entries) {
+      if (remainingToAllocate <= 0) break;
+      
+      const quantityFromEntry = Math.min(remainingToAllocate, entry.remaining_quantity);
+      const cost = quantityFromEntry * entry.unit_price;
+      
+      // Create output line
+      const { data: lineData, error: lineError } = await supabase
+        .from('stock_output_lines')
+        .insert({
+          stock_output_id: outputData.id,
+          stock_entry_id: entry.id,
+          quantity: quantityFromEntry,
+          unit_price: entry.unit_price
+        })
+        .select()
+        .single();
+        
+      if (lineError) throw lineError;
+      outputLines.push(lineData);
+      
+      // Update remaining quantity in the entry
+      const { error: updateError } = await supabase
+        .from('stock_entries')
+        .update({
+          remaining_quantity: entry.remaining_quantity - quantityFromEntry
+        })
+        .eq('id', entry.id);
+        
+      if (updateError) throw updateError;
+      
+      totalCost += cost;
+      remainingToAllocate -= quantityFromEntry;
+    }
+    
+    // Update the total cost in the output record
+    const { data: updatedOutput, error: updateOutputError } = await supabase
+      .from('stock_outputs')
+      .update({ total_cost: totalCost })
+      .eq('id', outputData.id)
+      .select()
+      .single();
+      
+    if (updateOutputError) throw updateOutputError;
+    
+    // Update product's current stock and average cost
+    await updateProductStock(productId);
+    
+    toast.success(`${quantity} units withdrawn successfully`);
+    return updatedOutput;
   } catch (error) {
     console.error('Error creating stock output:', error);
     toast.error('Failed to withdraw stock');
@@ -92,31 +150,103 @@ export async function updateStockOutput(
 
 export async function deleteStockOutput(id: string): Promise<boolean> {
   try {
-    // Get the product_id before deleting
-    const { data: outputData } = await supabase
+    // 1. Get the product_id and output lines before deleting
+    const { data: outputData, error: outputError } = await supabase
       .from('stock_outputs')
       .select('product_id')
       .eq('id', id)
       .single();
     
-    if (!outputData) throw new Error('Stock output not found');
+    if (outputError || !outputData) throw outputError || new Error('Stock output not found');
     
-    // Delete the stock output
-    const { error } = await supabase
+    const productId = outputData.product_id;
+    
+    // 2. Get all output lines for this output to know what to restore
+    const { data: linesData, error: linesError } = await supabase
+      .from('stock_output_lines')
+      .select('*')
+      .eq('stock_output_id', id);
+    
+    if (linesError) throw linesError;
+    
+    // 3. Restore stock to the original entries
+    for (const line of linesData || []) {
+      const { error: updateError } = await supabase
+        .from('stock_entries')
+        .update({
+          remaining_quantity: supabase.rpc('increment', { 
+            x: line.quantity,
+            row_id: line.stock_entry_id,
+            column_name: 'remaining_quantity',
+            table_name: 'stock_entries'
+          })
+        })
+        .eq('id', line.stock_entry_id);
+      
+      if (updateError) throw updateError;
+    }
+    
+    // 4. Delete the output lines
+    const { error: deleteLineError } = await supabase
+      .from('stock_output_lines')
+      .delete()
+      .eq('stock_output_id', id);
+    
+    if (deleteLineError) throw deleteLineError;
+    
+    // 5. Delete the stock output
+    const { error: deleteError } = await supabase
       .from('stock_outputs')
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (deleteError) throw deleteError;
     
-    // Update product stock and cost after deletion
-    await supabase.rpc('update_product_stock_and_cost', {
-      product_id: outputData.product_id
-    });
+    // 6. Update product stock and cost after deletion
+    await updateProductStock(productId);
     
     return true;
   } catch (error) {
     console.error('Error deleting stock output:', error);
+    throw error;
+  }
+}
+
+// Helper function to update product stock and average cost
+async function updateProductStock(productId: string): Promise<void> {
+  try {
+    // Calculate current stock from remaining quantities in entries
+    const { data: entriesData, error: entriesError } = await supabase
+      .from('stock_entries')
+      .select('remaining_quantity, unit_price')
+      .eq('product_id', productId);
+    
+    if (entriesError) throw entriesError;
+    
+    const entries = entriesData || [];
+    const currentStock = entries.reduce((sum, entry) => sum + entry.remaining_quantity, 0);
+    
+    // Calculate average cost
+    let totalValue = 0;
+    for (const entry of entries) {
+      totalValue += entry.remaining_quantity * entry.unit_price;
+    }
+    
+    const averageCost = currentStock > 0 ? totalValue / currentStock : 0;
+    
+    // Update product
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        current_stock: currentStock,
+        average_cost: averageCost,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
+    
+    if (updateError) throw updateError;
+  } catch (error) {
+    console.error('Error updating product stock:', error);
     throw error;
   }
 }

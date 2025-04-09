@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -14,7 +14,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { StockOutput } from "@/types/supabase";
-import { updateStockOutput, deleteStockOutput } from "@/services/stockOutputService";
+import { updateStockOutput, deleteStockOutput, getStockOutputsForProduct } from "@/services/stockOutputService";
 import { toast } from "sonner";
 
 const stockOutputSchema = z.object({
@@ -69,7 +69,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
       setIsDeleting(true);
       try {
         await deleteStockOutput(stockOutput.id);
-        toast.success("Stock withdrawal deleted successfully");
+        toast.success("Stock withdrawal deleted and inventory returned to stock");
         onOpenChange(false);
         onSuccess();
       } catch (error) {
@@ -87,7 +87,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
         <DialogHeader>
           <DialogTitle>Edit Stock Withdrawal</DialogTitle>
           <DialogDescription>
-            Make changes to the withdrawal record. Quantity cannot be modified as inventory has already been allocated.
+            Update the withdrawal record details. When deleted, inventory will be returned to stock.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -103,6 +103,9 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
                 <label className="text-sm font-medium">Total Cost</label>
                 <p className="text-muted-foreground p-2 border rounded-md bg-muted/30">
                   ${stockOutput.total_cost.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ${(stockOutput.total_cost / stockOutput.total_quantity).toFixed(2)} per unit
                 </p>
               </div>
             </div>

@@ -17,21 +17,26 @@ import { StockEntry } from "@/types/supabase";
 import { updateStockEntry, deleteStockEntry } from "@/services/stockEntryService";
 import { toast } from "sonner";
 
-const stockEntrySchema = z.object({
-  quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }).refine(
-    (val, ctx) => {
-      const initialQty = ctx.path && ctx.path[0] === 'quantity' && 'stockEntry' in ctx.common ? (ctx.common.stockEntry as StockEntry).quantity : 0;
-      const remainingQty = ctx.path && ctx.path[0] === 'quantity' && 'stockEntry' in ctx.common ? (ctx.common.stockEntry as StockEntry).remaining_quantity : 0;
-      return val >= initialQty - (initialQty - remainingQty);
-    },
-    {
-      message: "Cannot reduce quantity below what has already been consumed.",
-    }
-  ),
-  unitPrice: z.coerce.number().nonnegative({ message: "Unit price must be 0 or greater." }),
-  entryDate: z.date({ required_error: "Please select a date." }),
-  notes: z.string().optional(),
-});
+// Define the schema outside the component to avoid recreation on each render
+const createStockEntrySchema = (stockEntry: StockEntry) => {
+  return z.object({
+    quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }).refine(
+      (val) => {
+        // Can't reduce below what has been consumed
+        const consumedQuantity = stockEntry.quantity - stockEntry.remaining_quantity;
+        return val >= consumedQuantity;
+      },
+      {
+        message: "Cannot reduce quantity below what has already been consumed.",
+      }
+    ),
+    unitPrice: z.coerce.number().nonnegative({ message: "Unit price must be 0 or greater." }),
+    entryDate: z.date({ required_error: "Please select a date." }),
+    notes: z.string().optional(),
+  });
+};
+
+type StockEntryFormValues = z.infer<ReturnType<typeof createStockEntrySchema>>;
 
 interface EditStockEntryDialogProps {
   stockEntry: StockEntry;
@@ -44,20 +49,17 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const form = useForm<z.infer<typeof stockEntrySchema>>({
-    resolver: zodResolver(stockEntrySchema),
+  const form = useForm<StockEntryFormValues>({
+    resolver: zodResolver(createStockEntrySchema(stockEntry)),
     defaultValues: {
       quantity: stockEntry.quantity,
       unitPrice: stockEntry.unit_price,
       entryDate: new Date(stockEntry.entry_date),
       notes: stockEntry.notes || "",
     },
-    context: {
-      stockEntry,
-    },
   });
 
-  async function onSubmit(data: z.infer<typeof stockEntrySchema>) {
+  async function onSubmit(data: StockEntryFormValues) {
     setIsSubmitting(true);
     try {
       await updateStockEntry({
