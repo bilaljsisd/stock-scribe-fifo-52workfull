@@ -171,16 +171,22 @@ export async function deleteStockOutput(id: string): Promise<boolean> {
     
     // 3. Restore stock to the original entries
     for (const line of linesData || []) {
-      // Update the entry to restore the quantity
+      // Get the current remaining quantity first
+      const { data: entryData, error: getEntryError } = await supabase
+        .from('stock_entries')
+        .select('remaining_quantity')
+        .eq('id', line.stock_entry_id)
+        .single();
+      
+      if (getEntryError) throw getEntryError;
+      
+      // Then update the entry to restore the quantity
+      const newRemainingQuantity = entryData.remaining_quantity + line.quantity;
+      
       const { error: updateError } = await supabase
         .from('stock_entries')
         .update({
-          remaining_quantity: supabase.rpc('increment', { 
-            row_id: line.stock_entry_id,
-            table_name: 'stock_entries',
-            column_name: 'remaining_quantity',
-            value: line.quantity
-          }) as any
+          remaining_quantity: newRemainingQuantity
         })
         .eq('id', line.stock_entry_id);
       
