@@ -6,9 +6,9 @@ import { toast } from "sonner";
 export async function getStockEntriesForProduct(productId: string): Promise<StockEntry[]> {
   try {
     const { data, error } = await supabase
-      .from('stock_entries')
-      .select('*')
-      .eq('stock_entries.product_id', productId)
+      .from('stock_entries') // Referring to the stock_entries table
+      .select('*') // Select all columns
+      .eq('product_id', productId) // Corrected this line, remove stock_entries. prefix
       .order('entry_date');
     
     if (error) throw error;
@@ -19,6 +19,7 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
     return [];
   }
 }
+
 
 export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>): Promise<StockEntry | null> {
   try {
