@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useInventoryStore } from "@/store/inventoryStore";
 import { Product } from "@/types/inventory";
 
+// Update the schema to make sure all required fields are validated
 const productSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   sku: z.string().min(2, { message: "SKU must be at least 2 characters." }),
@@ -43,7 +44,14 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
           ...data,
         });
       } else {
-        addProduct(data);
+        // Ensure all required properties are passed
+        const productData = {
+          name: data.name,  // Explicitly assigning to ensure it's not optional
+          sku: data.sku,    // Explicitly assigning to ensure it's not optional
+          description: data.description || "", // Provide default value for optional field
+        };
+        
+        addProduct(productData);
         form.reset();
       }
       
