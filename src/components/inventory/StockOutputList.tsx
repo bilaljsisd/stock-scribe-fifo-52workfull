@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Product, StockOutput } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,25 +14,18 @@ interface StockOutputListProps {
 export function StockOutputList({ product }: StockOutputListProps) {
   const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
     async function loadStockOutputs() {
       setLoading(true);
-      setError(null); // Reset error before loading new data
-      try {
-        const outputs = await getStockOutputsForProduct(product.id);
-        setStockOutputs(outputs);
-      } catch (err) {
-        setError("Failed to load stock withdrawals. Please try again.");
-      } finally {
-        setLoading(false);
-      }
+      const outputs = await getStockOutputsForProduct(product.id);
+      setStockOutputs(outputs);
+      setLoading(false);
     }
-
+    
     loadStockOutputs();
   }, [product.id]);
-
+  
   if (loading) {
     return (
       <Card>
@@ -46,23 +40,7 @@ export function StockOutputList({ product }: StockOutputListProps) {
       </Card>
     );
   }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Stock Withdrawals</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-red-500">
-            <h3 className="text-lg font-medium">Error</h3>
-            <p className="text-sm">{error}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  
   if (stockOutputs.length === 0) {
     return (
       <Card>
@@ -81,7 +59,7 @@ export function StockOutputList({ product }: StockOutputListProps) {
       </Card>
     );
   }
-
+  
   return (
     <Card>
       <CardHeader>
@@ -106,9 +84,7 @@ export function StockOutputList({ product }: StockOutputListProps) {
                 <TableCell>{output.reference_number || "-"}</TableCell>
                 <TableCell>{formatCurrency(output.total_cost)}</TableCell>
                 <TableCell>
-                  {output.total_quantity > 0
-                    ? formatCurrency(output.total_cost / output.total_quantity)
-                    : "-"}
+                  {formatCurrency(output.total_cost / output.total_quantity)}
                 </TableCell>
               </TableRow>
             ))}

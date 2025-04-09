@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -67,11 +68,9 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
         if (onSuccess) {
           onSuccess();
         }
-        toast.success("Stock output processed successfully!");
       }
     } catch (error) {
       console.error(error);
-      toast.error("There was an error processing the stock output.");
     } finally {
       setIsSubmitting(false);
     }
@@ -80,7 +79,6 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Quantity Field */}
         <FormField
           control={form.control}
           name="quantity"
@@ -88,12 +86,11 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
             <FormItem>
               <FormLabel>Quantity</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Enter quantity to withdraw"
-                  {...field}
+                <Input 
+                  type="number" 
+                  placeholder="Enter quantity to withdraw" 
+                  {...field} 
                   onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  className={form.formState.errors.quantity ? "border-red-500" : ""}
                 />
               </FormControl>
               <FormDescription>
@@ -103,8 +100,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
             </FormItem>
           )}
         />
-
-        {/* Output Date Field */}
+        
         <FormField
           control={form.control}
           name="outputDate"
@@ -143,8 +139,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
             </FormItem>
           )}
         />
-
-        {/* Reference Number Field */}
+        
         <FormField
           control={form.control}
           name="referenceNumber"
@@ -161,8 +156,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
             </FormItem>
           )}
         />
-
-        {/* Notes Field */}
+        
         <FormField
           control={form.control}
           name="notes"
@@ -176,14 +170,8 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
             </FormItem>
           )}
         />
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          variant="default"
-          className="bg-inventory-600 hover:bg-inventory-700"
-        >
+        
+        <Button type="submit" disabled={isSubmitting} variant="default" className="bg-inventory-600 hover:bg-inventory-700">
           {isSubmitting ? "Processing..." : "Withdraw Stock (FIFO)"}
         </Button>
       </form>

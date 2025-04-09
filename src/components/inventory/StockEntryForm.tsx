@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -65,7 +66,6 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
       }
     } catch (error) {
       console.error(error);
-      // Optionally handle specific error scenarios here
     } finally {
       setIsSubmitting(false);
     }
