@@ -11,7 +11,7 @@ export async function getProducts(): Promise<Product[]> {
       .order('name');
     
     if (error) throw error;
-    return data || [];
+    return data as Product[] || [];
   } catch (error) {
     console.error('Error fetching products:', error);
     toast.error('Failed to load products');
@@ -28,7 +28,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Product;
   } catch (error) {
     console.error(`Error fetching product with id ${id}:`, error);
     toast.error('Failed to load product details');
@@ -53,7 +53,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
     
     if (error) throw error;
     toast.success(`Product ${product.name} added`);
-    return data;
+    return data as Product;
   } catch (error) {
     console.error('Error creating product:', error);
     toast.error('Failed to create product');

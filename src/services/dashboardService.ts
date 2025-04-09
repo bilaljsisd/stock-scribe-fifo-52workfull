@@ -44,8 +44,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
       .gt('remaining_quantity', 0)
       .not('expiry_date', 'is', null)
       .gte('expiry_date', today)
-      .lte('expiry_date', futureDateString)
-      .order('expiry_date');
+      .lte('expiry_date', futureDateString);
     
     if (error) {
       console.error("Error in query:", error);
@@ -59,7 +58,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     
     data.forEach((entry) => {
       const product = entry.products as any;
-      const expiryDate = new Date(entry.expiry_date);
+      const expiryDate = new Date(entry.expiry_date as string);
       const today = new Date();
       
       // Calculate days until expiry
@@ -70,17 +69,17 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
           id: product.id,
           name: product.name,
           sku: product.sku,
-          expiry_date: entry.expiry_date,
-          quantity: entry.remaining_quantity,
+          expiry_date: entry.expiry_date as string,
+          quantity: entry.remaining_quantity as number,
           days_until_expiry: daysUntilExpiry
         };
       } else {
         // If we already have this product, update the quantity
-        expiringProducts[product.id].quantity += entry.remaining_quantity;
+        expiringProducts[product.id].quantity += entry.remaining_quantity as number;
         
         // If this entry expires sooner, update the expiry date
-        if (new Date(entry.expiry_date) < new Date(expiringProducts[product.id].expiry_date)) {
-          expiringProducts[product.id].expiry_date = entry.expiry_date;
+        if (new Date(entry.expiry_date as string) < new Date(expiringProducts[product.id].expiry_date)) {
+          expiringProducts[product.id].expiry_date = entry.expiry_date as string;
           expiringProducts[product.id].days_until_expiry = daysUntilExpiry;
         }
       }
