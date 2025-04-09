@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useInventoryStore } from "@/store/inventoryStore";
-import { Product } from "@/types/inventory";
+import { Product } from "@/types/supabase";
+import { createStockOutput } from "@/services/stockOutputService";
 import { toast } from "sonner";
 
 const stockOutputSchema = z.object({
@@ -30,7 +31,7 @@ interface StockOutputFormProps {
 }
 
 export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
-  const { createStockOutput } = useInventoryStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<StockOutputFormValues>({
     resolver: zodResolver(stockOutputSchema),
@@ -42,27 +43,36 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
     },
   });
 
-  function onSubmit(data: StockOutputFormValues) {
-    // Validate that we have enough stock
-    if (data.quantity > product.currentStock) {
-      toast.error(`Not enough stock. Only ${product.currentStock} units available.`);
-      return;
-    }
+  async function onSubmit(data: StockOutputFormValues) {
+    setIsSubmitting(true);
     
-    const result = createStockOutput(
-      product.id,
-      data.quantity,
-      data.outputDate,
-      data.referenceNumber || undefined,
-      data.notes || undefined
-    );
-    
-    if (result) {
-      form.reset();
-      
-      if (onSuccess) {
-        onSuccess();
+    try {
+      // Validate that we have enough stock
+      if (data.quantity > product.current_stock) {
+        toast.error(`Not enough stock. Only ${product.current_stock} units available.`);
+        setIsSubmitting(false);
+        return;
       }
+      
+      const result = await createStockOutput(
+        product.id,
+        data.quantity,
+        data.outputDate.toISOString(),
+        data.referenceNumber || undefined,
+        data.notes || undefined
+      );
+      
+      if (result) {
+        form.reset();
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -84,7 +94,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
                 />
               </FormControl>
               <FormDescription>
-                Available: {product.currentStock} units
+                Available: {product.current_stock} units
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -161,8 +171,8 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           )}
         />
         
-        <Button type="submit" variant="default" className="bg-inventory-600 hover:bg-inventory-700">
-          Withdraw Stock (FIFO)
+        <Button type="submit" disabled={isSubmitting} variant="default" className="bg-inventory-600 hover:bg-inventory-700">
+          {isSubmitting ? "Processing..." : "Withdraw Stock (FIFO)"}
         </Button>
       </form>
     </Form>

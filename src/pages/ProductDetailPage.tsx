@@ -1,28 +1,79 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Package, Plus, Minus, Edit, History, Truck } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useInventoryStore } from "@/store/inventoryStore";
 import { formatCurrency } from "@/lib/formatters";
 import { ProductForm } from "@/components/products/ProductForm";
 import { StockEntryForm } from "@/components/inventory/StockEntryForm";
 import { StockOutputForm } from "@/components/inventory/StockOutputForm";
 import { StockEntryList } from "@/components/inventory/StockEntryList";
 import { StockOutputList } from "@/components/inventory/StockOutputList";
+import { getProductById, deleteProduct } from "@/services/productService";
+import { Product } from "@/types/supabase";
 import { toast } from "sonner";
 
 const ProductDetailPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { getProductById, deleteProduct } = useInventoryStore();
+  const [product, setProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   
-  const product = getProductById(productId || "");
+  useEffect(() => {
+    async function loadProduct() {
+      if (!productId) return;
+      
+      setLoading(true);
+      const data = await getProductById(productId);
+      setProduct(data);
+      setLoading(false);
+    }
+    
+    loadProduct();
+  }, [productId, refreshKey]);
+  
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+  
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+    
+    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
+      try {
+        const success = await deleteProduct(product.id, product.name);
+        if (success) {
+          navigate("/products");
+        }
+      } catch (error) {
+        toast.error("Failed to delete product");
+      }
+    }
+  };
+  
+  const handleEditSuccess = () => {
+    setIsEditing(false);
+    handleRefresh();
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-6">
+          <div className="flex justify-center py-12">
+            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   if (!product) {
     return (
@@ -45,21 +96,6 @@ const ProductDetailPage = () => {
       </div>
     );
   }
-  
-  const handleDeleteProduct = () => {
-    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
-      try {
-        deleteProduct(product.id);
-        navigate("/products");
-      } catch (error) {
-        toast.error("Failed to delete product");
-      }
-    }
-  };
-  
-  const handleEditSuccess = () => {
-    setIsEditing(false);
-  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -132,15 +168,15 @@ const ProductDetailPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">Current Stock</p>
-                      <h3 className="text-2xl font-bold">{product.currentStock}</h3>
+                      <h3 className="text-2xl font-bold">{product.current_stock}</h3>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">Average Cost</p>
-                      <h3 className="text-2xl font-bold">{formatCurrency(product.averageCost)}</h3>
+                      <h3 className="text-2xl font-bold">{formatCurrency(product.average_cost)}</h3>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                      <h3 className="text-2xl font-bold">{formatCurrency(product.currentStock * product.averageCost)}</h3>
+                      <h3 className="text-2xl font-bold">{formatCurrency(product.current_stock * product.average_cost)}</h3>
                     </div>
                   </div>
                   
@@ -185,7 +221,10 @@ const ProductDetailPage = () => {
                     <CardContent>
                       <StockEntryForm 
                         product={product} 
-                        onSuccess={() => setActiveTab("overview")} 
+                        onSuccess={() => {
+                          setActiveTab("overview");
+                          handleRefresh();
+                        }} 
                       />
                     </CardContent>
                   </Card>
@@ -204,7 +243,10 @@ const ProductDetailPage = () => {
                     <CardContent>
                       <StockOutputForm 
                         product={product} 
-                        onSuccess={() => setActiveTab("overview")} 
+                        onSuccess={() => {
+                          setActiveTab("overview");
+                          handleRefresh();
+                        }} 
                       />
                     </CardContent>
                   </Card>

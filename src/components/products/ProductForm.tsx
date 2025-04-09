@@ -7,10 +7,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useInventoryStore } from "@/store/inventoryStore";
-import { Product } from "@/types/inventory";
+import { useState } from "react";
+import { Product } from "@/types/supabase";
+import { createProduct, updateProduct } from "@/services/productService";
 
-// Update the schema to make sure all required fields are validated
 const productSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   sku: z.string().min(2, { message: "SKU must be at least 2 characters." }),
@@ -25,7 +25,7 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
-  const { addProduct, updateProduct } = useInventoryStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -36,22 +36,20 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
     },
   });
 
-  function onSubmit(data: ProductFormValues) {
+  async function onSubmit(data: ProductFormValues) {
+    setIsSubmitting(true);
     try {
       if (initialData) {
-        updateProduct({
-          ...initialData,
+        await updateProduct({
+          id: initialData.id,
           ...data,
         });
       } else {
-        // Ensure all required properties are passed
-        const productData = {
-          name: data.name,  // Explicitly assigning to ensure it's not optional
-          sku: data.sku,    // Explicitly assigning to ensure it's not optional
-          description: data.description || "", // Provide default value for optional field
-        };
-        
-        addProduct(productData);
+        await createProduct({
+          name: data.name,
+          sku: data.sku,
+          description: data.description || "",
+        });
         form.reset();
       }
       
@@ -59,8 +57,9 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
         onSuccess();
       }
     } catch (error) {
-      toast.error("Failed to save product.");
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -112,8 +111,8 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
           )}
         />
         
-        <Button type="submit">
-          {initialData ? "Update Product" : "Add Product"}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : initialData ? "Update Product" : "Add Product"}
         </Button>
       </form>
     </Form>

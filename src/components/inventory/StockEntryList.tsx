@@ -1,18 +1,45 @@
 
-import { StockEntry, Product } from "@/types/inventory";
-import { useInventoryStore } from "@/store/inventoryStore";
+import { useState, useEffect } from "react";
+import { Product, StockEntry } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Package } from "lucide-react";
+import { getStockEntriesForProduct } from "@/services/stockEntryService";
 
 interface StockEntryListProps {
   product: Product;
 }
 
 export function StockEntryList({ product }: StockEntryListProps) {
-  const { getStockEntriesForProduct } = useInventoryStore();
-  const stockEntries = getStockEntriesForProduct(product.id);
+  const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadStockEntries() {
+      setLoading(true);
+      const entries = await getStockEntriesForProduct(product.id);
+      setStockEntries(entries);
+      setLoading(false);
+    }
+    
+    loadStockEntries();
+  }, [product.id]);
+  
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Stock Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-6">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   if (stockEntries.length === 0) {
     return (
@@ -51,16 +78,16 @@ export function StockEntryList({ product }: StockEntryListProps) {
           </TableHeader>
           <TableBody>
             {stockEntries.map((entry) => (
-              <TableRow key={entry.id} className={entry.remainingQuantity === 0 ? "bg-muted/50" : ""}>
-                <TableCell>{formatDate(entry.entryDate)}</TableCell>
+              <TableRow key={entry.id} className={entry.remaining_quantity === 0 ? "bg-muted/50" : ""}>
+                <TableCell>{formatDate(new Date(entry.entry_date))}</TableCell>
                 <TableCell>{entry.quantity}</TableCell>
                 <TableCell>
-                  <span className={entry.remainingQuantity === 0 ? "text-muted-foreground" : ""}>
-                    {entry.remainingQuantity}
+                  <span className={entry.remaining_quantity === 0 ? "text-muted-foreground" : ""}>
+                    {entry.remaining_quantity}
                   </span>
                 </TableCell>
-                <TableCell>{formatCurrency(entry.unitPrice)}</TableCell>
-                <TableCell>{formatCurrency(entry.remainingQuantity * entry.unitPrice)}</TableCell>
+                <TableCell>{formatCurrency(entry.unit_price)}</TableCell>
+                <TableCell>{formatCurrency(entry.remaining_quantity * entry.unit_price)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1,32 +1,63 @@
 
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Package, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, ChevronRight } from "lucide-react";
-import { useInventoryStore } from "@/store/inventoryStore";
 import { formatCurrency } from "@/lib/formatters";
 import { ProductCard } from "@/components/products/ProductCard";
+import { getProducts } from "@/services/productService";
+import { getAllTransactions } from "@/services/transactionService";
+import { Product, Transaction } from "@/types/supabase";
 
 const Index = () => {
-  const { products, transactions } = useInventoryStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const [productsData, transactionsData] = await Promise.all([
+        getProducts(),
+        getAllTransactions()
+      ]);
+      
+      setProducts(productsData);
+      setTransactions(transactionsData);
+      setLoading(false);
+    }
+    
+    loadData();
+  }, []);
   
   // Calculate some statistics
   const totalProducts = products.length;
   const totalInventoryValue = products.reduce(
-    (sum, product) => sum + product.averageCost * product.currentStock, 
+    (sum, product) => sum + Number(product.average_cost) * product.current_stock, 
     0
   );
   
   // Get recent transactions
-  const recentTransactions = [...transactions]
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
+  const recentTransactions = transactions
     .slice(0, 5);
   
   // Get low stock products (less than 10 units)
   const lowStockProducts = products
-    .filter(product => product.currentStock < 10)
+    .filter(product => product.current_stock < 10)
     .slice(0, 4);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-6 flex justify-center items-center">
+          <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-background">
@@ -123,7 +154,7 @@ const Index = () => {
                 ) : (
                   <div className="space-y-4">
                     {recentTransactions.map((transaction) => {
-                      const product = products.find(p => p.id === transaction.productId);
+                      const product = products.find(p => p.id === transaction.product_id);
                       return (
                         <div key={transaction.id} className="flex items-center">
                           <div className={`rounded-full p-2 mr-4 ${
@@ -193,9 +224,9 @@ const Index = () => {
                           </p>
                         </div>
                         <div className={`text-sm font-medium ${
-                          product.currentStock === 0 ? 'text-red-600' : 'text-amber-600'
+                          product.current_stock === 0 ? 'text-red-600' : 'text-amber-600'
                         }`}>
-                          {product.currentStock} units
+                          {product.current_stock} units
                         </div>
                       </div>
                     ))}

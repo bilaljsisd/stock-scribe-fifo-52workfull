@@ -1,23 +1,36 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Plus, Search, Package } from "lucide-react";
-import { useInventoryStore } from "@/store/inventoryStore";
-import { ProductCard } from "@/components/products/ProductCard";
 import { Input } from "@/components/ui/input";
+import { ProductCard } from "@/components/products/ProductCard";
+import { Product } from "@/types/supabase";
+import { getProducts } from "@/services/productService";
 
 const ProductsPage = () => {
-  const { products } = useInventoryStore();
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true);
+      const data = await getProducts();
+      setProducts(data);
+      setLoading(false);
+    }
+    
+    loadProducts();
+  }, []);
   
   // Filter products based on search query
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
   return (
@@ -47,7 +60,11 @@ const ProductsPage = () => {
             </div>
           </div>
           
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-16 w-16 text-gray-300 mb-4" />
               {searchQuery ? (

@@ -1,18 +1,45 @@
 
-import { StockOutput, Product } from "@/types/inventory";
-import { useInventoryStore } from "@/store/inventoryStore";
+import { useState, useEffect } from "react";
+import { Product, StockOutput } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Package } from "lucide-react";
+import { getStockOutputsForProduct } from "@/services/stockOutputService";
 
 interface StockOutputListProps {
   product: Product;
 }
 
 export function StockOutputList({ product }: StockOutputListProps) {
-  const { getStockOutputsForProduct } = useInventoryStore();
-  const stockOutputs = getStockOutputsForProduct(product.id);
+  const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadStockOutputs() {
+      setLoading(true);
+      const outputs = await getStockOutputsForProduct(product.id);
+      setStockOutputs(outputs);
+      setLoading(false);
+    }
+    
+    loadStockOutputs();
+  }, [product.id]);
+  
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Stock Withdrawals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-6">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   if (stockOutputs.length === 0) {
     return (
@@ -52,12 +79,12 @@ export function StockOutputList({ product }: StockOutputListProps) {
           <TableBody>
             {stockOutputs.map((output) => (
               <TableRow key={output.id}>
-                <TableCell>{formatDate(output.outputDate)}</TableCell>
-                <TableCell>{output.totalQuantity}</TableCell>
-                <TableCell>{output.referenceNumber || "-"}</TableCell>
-                <TableCell>{formatCurrency(output.totalCost)}</TableCell>
+                <TableCell>{formatDate(new Date(output.output_date))}</TableCell>
+                <TableCell>{output.total_quantity}</TableCell>
+                <TableCell>{output.reference_number || "-"}</TableCell>
+                <TableCell>{formatCurrency(output.total_cost)}</TableCell>
                 <TableCell>
-                  {formatCurrency(output.totalCost / output.totalQuantity)}
+                  {formatCurrency(output.total_cost / output.total_quantity)}
                 </TableCell>
               </TableRow>
             ))}

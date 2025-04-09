@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useInventoryStore } from "@/store/inventoryStore";
-import { Product } from "@/types/inventory";
+import { Product } from "@/types/supabase";
+import { addStockEntry } from "@/services/stockEntryService";
 
 const stockEntrySchema = z.object({
   quantity: z.number().positive({ message: "Quantity must be greater than 0." }),
@@ -29,7 +30,7 @@ interface StockEntryFormProps {
 }
 
 export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
-  const { addStockEntry } = useInventoryStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<StockEntryFormValues>({
     resolver: zodResolver(stockEntrySchema),
@@ -41,19 +42,27 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
     },
   });
 
-  function onSubmit(data: StockEntryFormValues) {
-    addStockEntry({
-      productId: product.id,
-      quantity: data.quantity,
-      unitPrice: data.unitPrice,
-      entryDate: data.entryDate,
-      notes: data.notes,
-    });
-    
-    form.reset();
-    
-    if (onSuccess) {
-      onSuccess();
+  async function onSubmit(data: StockEntryFormValues) {
+    setIsSubmitting(true);
+    try {
+      await addStockEntry({
+        product_id: product.id,
+        quantity: data.quantity,
+        remaining_quantity: data.quantity,
+        unit_price: data.unitPrice,
+        entry_date: data.entryDate.toISOString(),
+        notes: data.notes || null,
+      });
+      
+      form.reset();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -155,8 +164,8 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
           )}
         />
         
-        <Button type="submit">
-          Add Stock Entry
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Adding..." : "Add Stock Entry"}
         </Button>
       </form>
     </Form>
