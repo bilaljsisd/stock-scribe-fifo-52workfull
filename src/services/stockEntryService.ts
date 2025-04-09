@@ -13,7 +13,7 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
     
     if (error) throw error;
     
-    // Check if expiry_date is missing in the data and add it
+    // Ensure expiry_date is present in the data
     const stockEntries = data?.map(entry => ({
       ...entry,
       expiry_date: entry.expiry_date || null
@@ -50,7 +50,7 @@ export async function addStockEntry(stockEntry: Omit<StockEntry, 'id' | 'created
     
     if (updateError) throw updateError;
     
-    // Make sure all required fields are present
+    // Ensure expiry_date is present
     const fullData = {
       ...data,
       expiry_date: data.expiry_date || null

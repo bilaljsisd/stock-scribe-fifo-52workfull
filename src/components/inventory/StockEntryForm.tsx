@@ -142,6 +142,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
                         date > new Date() || date < new Date("1900-01-01")
                       }
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -185,6 +186,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
                           date < new Date()
                         }
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>

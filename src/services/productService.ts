@@ -12,7 +12,7 @@ export async function getProducts(): Promise<Product[]> {
     
     if (error) throw error;
     
-    // Add is_expirable if it's missing
+    // Process the data to ensure is_expirable is present
     const products = data?.map(product => ({
       ...product,
       is_expirable: product.is_expirable !== undefined ? product.is_expirable : false
@@ -60,13 +60,14 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
         description: product.description || null,
         current_stock: 0,
         average_cost: 0,
-        is_expirable: product.is_expirable || false
+        is_expirable: product.is_expirable
       })
       .select()
       .single();
     
     if (error) throw error;
     
+    // Ensure is_expirable is properly set
     const fullProduct = {
       ...data,
       is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
@@ -98,6 +99,7 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
     
     if (error) throw error;
     
+    // Ensure is_expirable is properly set
     const fullProduct = {
       ...data,
       is_expirable: data.is_expirable !== undefined ? data.is_expirable : false

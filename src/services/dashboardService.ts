@@ -21,7 +21,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     const today = new Date().toISOString().split('T')[0];
     const futureDateString = futureDate.toISOString().split('T')[0];
     
-    // Check for the expiry_date column first
+    // First check if the expiry_date column exists in stock_entries table
     const { error: columnCheckError } = await supabase
       .from('stock_entries')
       .select('expiry_date')
@@ -29,10 +29,11 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     
     if (columnCheckError) {
       console.error("Error checking expiry_date column:", columnCheckError);
+      // If column doesn't exist, return empty array
       return [];
     }
     
-    // Check for the is_expirable column
+    // Check if the is_expirable column exists in products table
     const { error: productColumnCheckError } = await supabase
       .from('products')
       .select('is_expirable')
@@ -40,12 +41,12 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     
     if (productColumnCheckError) {
       console.error("Error checking is_expirable column:", productColumnCheckError);
-      // The is_expirable column doesn't exist yet
+      // If column doesn't exist, return empty array
       return [];
     }
     
     // Get products with is_expirable = true
-    const { data: products, error: productsError } = await supabase
+    const { data: expirableProducts, error: productsError } = await supabase
       .from('products')
       .select('id')
       .eq('is_expirable', true);
@@ -55,7 +56,10 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
       return [];
     }
     
-    if (!products || products.length === 0) return [];
+    if (!expirableProducts || expirableProducts.length === 0) return [];
+    
+    // Get the expirable product IDs
+    const expirableProductIds = expirableProducts.map(p => p.id);
     
     // Query for stock entries with expiry dates in the next X days
     const { data, error } = await supabase
@@ -67,6 +71,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
         expiry_date,
         products(id, name, sku)
       `)
+      .in('product_id', expirableProductIds)
       .gt('remaining_quantity', 0)
       .not('expiry_date', 'is', null)
       .gte('expiry_date', today)
