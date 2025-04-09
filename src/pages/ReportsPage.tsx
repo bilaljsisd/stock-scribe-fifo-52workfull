@@ -1,26 +1,46 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
-import { useInventoryStore } from "@/store/inventoryStore";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { getAllTransactions } from "@/services/transactionService";
+import { getProducts } from "@/services/productService";
+import { Product, Transaction } from "@/types/supabase";
 
 const ReportsPage = () => {
-  const { products, transactions } = useInventoryStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [productFilter, setProductFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const [productsData, transactionsData] = await Promise.all([
+        getProducts(),
+        getAllTransactions()
+      ]);
+      
+      setProducts(productsData);
+      setTransactions(transactionsData);
+      setLoading(false);
+    }
+    
+    loadData();
+  }, []);
   
   // Filter transactions based on selected filters
   const filteredTransactions = transactions.filter((transaction) => {
     // Filter by product
-    if (productFilter !== "all" && transaction.productId !== productFilter) {
+    if (productFilter !== "all" && transaction.product_id !== productFilter) {
       return false;
     }
     
@@ -30,20 +50,29 @@ const ReportsPage = () => {
     }
     
     // Filter by date range
-    if (dateRange?.from && transaction.date < dateRange.from) {
-      return false;
+    if (dateRange?.from) {
+      const fromDate = new Date(dateRange.from);
+      const transactionDate = new Date(transaction.date);
+      if (transactionDate < fromDate) {
+        return false;
+      }
     }
     
     if (dateRange?.to) {
       const toDate = new Date(dateRange.to);
       toDate.setHours(23, 59, 59, 999);
-      if (transaction.date > toDate) {
+      const transactionDate = new Date(transaction.date);
+      if (transactionDate > toDate) {
         return false;
       }
     }
     
     return true;
-  }).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }).sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB.getTime() - dateA.getTime();
+  });
   
   // Calculate totals
   const entriesCount = filteredTransactions.filter(t => t.type === 'entry').length;
@@ -125,10 +154,10 @@ const ReportsPage = () => {
           </thead>
           <tbody>
             ${filteredTransactions.map(transaction => {
-              const product = products.find(p => p.id === transaction.productId);
+              const product = products.find(p => p.id === transaction.product_id);
               return `
                 <tr>
-                  <td>${formatDate(transaction.date)}</td>
+                  <td>${formatDate(new Date(transaction.date))}</td>
                   <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
                   <td>${product?.name || 'Unknown Product'}</td>
                   <td>${transaction.quantity}</td>
@@ -160,6 +189,19 @@ const ReportsPage = () => {
       }, 500);
     };
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-6">
+          <div className="flex justify-center py-12">
+            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-background">
@@ -323,10 +365,10 @@ const ReportsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredTransactions.map((transaction) => {
-                        const product = products.find(p => p.id === transaction.productId);
+                        const product = products.find(p => p.id === transaction.product_id);
                         return (
                           <TableRow key={transaction.id}>
-                            <TableCell>{formatDate(transaction.date)}</TableCell>
+                            <TableCell>{formatDate(new Date(transaction.date))}</TableCell>
                             <TableCell>
                               <div className="flex items-center">
                                 <div className={`rounded-full p-1 mr-2 ${
