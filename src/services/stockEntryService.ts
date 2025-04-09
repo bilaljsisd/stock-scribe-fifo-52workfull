@@ -9,59 +9,68 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
       .from('stock_entries')
       .select('*')
       .eq('product_id', productId)
-      .order('entry_date');
-
+      .order('entry_date', { ascending: false });
+    
     if (error) throw error;
-
-    console.log("Stock Entries:", data);  // Log the response data here to inspect it
-
+    
+    console.info("Stock Entries:", data);
     return data || [];
   } catch (error) {
     console.error('Error fetching stock entries:', error);
-    toast.error('Failed to load stock entries');
     return [];
   }
 }
 
-
-
 export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>): Promise<StockEntry | null> {
   try {
-    // Start a transaction
-    const { data: stockEntry, error: stockEntryError } = await supabase
+    const { data, error } = await supabase
       .from('stock_entries')
-      .insert({
-        product_id: entry.product_id,
-        quantity: entry.quantity,
-        remaining_quantity: entry.quantity,
-        unit_price: entry.unit_price,
-        entry_date: entry.entry_date,
-        notes: entry.notes
-      })
+      .insert(entry)
       .select()
       .single();
     
-    if (stockEntryError) throw stockEntryError;
+    if (error) throw error;
     
-    // Create a transaction record - be specific with column names to avoid ambiguity
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        type: 'entry',
-        product_id: entry.product_id,
-        quantity: entry.quantity,
-        date: entry.entry_date,
-        reference_id: stockEntry?.id,
-        notes: entry.notes
-      });
-    
-    if (transactionError) throw transactionError;
-    
-    toast.success(`Added ${entry.quantity} units to inventory`);
-    return stockEntry;
+    return data;
   } catch (error) {
     console.error('Error adding stock entry:', error);
     toast.error('Failed to add stock entry');
     return null;
+  }
+}
+
+export async function updateStockEntry(
+  entry: Pick<StockEntry, 'id'> & Partial<Omit<StockEntry, 'id' | 'created_at' | 'product_id' | 'remaining_quantity'>>
+): Promise<StockEntry | null> {
+  try {
+    const { data, error } = await supabase
+      .from('stock_entries')
+      .update(entry)
+      .eq('id', entry.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error('Error updating stock entry:', error);
+    throw error;
+  }
+}
+
+export async function deleteStockEntry(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('stock_entries')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting stock entry:', error);
+    throw error;
   }
 }

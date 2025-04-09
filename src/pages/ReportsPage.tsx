@@ -150,16 +150,24 @@ const ReportsPage = () => {
               <th>Product</th>
               <th>Quantity</th>
               <th>Price</th>
+              <th>Total Value</th>
               <th>Notes</th>
             </tr>
           </thead>
           <tbody>
             ${filteredTransactions.map(transaction => {
               const product = products.find(p => p.id === transaction.product_id);
-              // Get price info from the product based on transaction type
-              const price = transaction.type === 'entry' 
-                ? product?.average_cost || 0 
-                : product?.average_cost || 0;
+              // Get price and total based on transaction type
+              let unitPrice = 0;
+              let totalPrice = 0;
+              
+              if (transaction.type === 'entry') {
+                unitPrice = transaction.unit_price || 0;
+                totalPrice = unitPrice * transaction.quantity;
+              } else if (transaction.type === 'output') {
+                totalPrice = transaction.total_cost || 0;
+                unitPrice = transaction.quantity > 0 ? totalPrice / transaction.quantity : 0;
+              }
               
               return `
                 <tr>
@@ -167,7 +175,8 @@ const ReportsPage = () => {
                   <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
                   <td>${product?.name || 'Unknown Product'}</td>
                   <td>${transaction.quantity}</td>
-                  <td>${formatCurrency(price)}</td>
+                  <td>${formatCurrency(unitPrice)}</td>
+                  <td>${formatCurrency(totalPrice)}</td>
                   <td>${transaction.notes || '-'}</td>
                 </tr>
               `;
@@ -367,15 +376,26 @@ const ReportsPage = () => {
                         <TableHead>Type</TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Quantity</TableHead>
-                        <TableHead>Price</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead>Total Value</TableHead>
                         <TableHead>Notes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredTransactions.map((transaction) => {
                         const product = products.find(p => p.id === transaction.product_id);
-                        // Get price info from the product
-                        const price = product?.average_cost || 0;
+                        
+                        // Calculate price information based on transaction type
+                        let unitPrice = 0;
+                        let totalPrice = 0;
+                        
+                        if (transaction.type === 'entry') {
+                          unitPrice = transaction.unit_price || 0;
+                          totalPrice = unitPrice * transaction.quantity;
+                        } else if (transaction.type === 'output') {
+                          totalPrice = transaction.total_cost || 0;
+                          unitPrice = transaction.quantity > 0 ? totalPrice / transaction.quantity : 0;
+                        }
                         
                         return (
                           <TableRow key={transaction.id}>
@@ -398,7 +418,8 @@ const ReportsPage = () => {
                             </TableCell>
                             <TableCell>{product?.name || 'Unknown Product'}</TableCell>
                             <TableCell>{transaction.quantity}</TableCell>
-                            <TableCell>{formatCurrency(price)}</TableCell>
+                            <TableCell>{formatCurrency(unitPrice)}</TableCell>
+                            <TableCell className="font-medium">{formatCurrency(totalPrice)}</TableCell>
                             <TableCell>{transaction.notes || '-'}</TableCell>
                           </TableRow>
                         );

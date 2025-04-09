@@ -4,10 +4,11 @@ import { Product, StockOutput } from "@/types/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Edit, Package, Printer, Trash2 } from "lucide-react";
+import { Edit, Package, Printer } from "lucide-react";
 import { getStockOutputsForProduct } from "@/services/stockOutputService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { EditStockOutputDialog } from "./EditStockOutputDialog";
 
 interface StockOutputListProps {
   product: Product;
@@ -16,17 +17,18 @@ interface StockOutputListProps {
 export function StockOutputList({ product }: StockOutputListProps) {
   const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingOutput, setEditingOutput] = useState<StockOutput | null>(null);
   
   useEffect(() => {
-    async function loadStockOutputs() {
-      setLoading(true);
-      const outputs = await getStockOutputsForProduct(product.id);
-      setStockOutputs(outputs);
-      setLoading(false);
-    }
-    
     loadStockOutputs();
   }, [product.id]);
+  
+  async function loadStockOutputs() {
+    setLoading(true);
+    const outputs = await getStockOutputsForProduct(product.id);
+    setStockOutputs(outputs);
+    setLoading(false);
+  }
   
   const handlePrint = (output: StockOutput) => {
     const printWindow = window.open('', '_blank');
@@ -103,15 +105,7 @@ export function StockOutputList({ product }: StockOutputListProps) {
   };
 
   const handleUpdate = (output: StockOutput) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would open a modal or navigate to an edit page
-    toast.info(`Update stock withdrawal ID: ${output.id} functionality would go here`);
-  };
-
-  const handleDelete = (output: StockOutput) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would perform the deletion
-    toast.info(`Delete stock withdrawal ID: ${output.id} functionality would go here`);
+    setEditingOutput(output);
   };
   
   if (loading) {
@@ -193,21 +187,21 @@ export function StockOutputList({ product }: StockOutputListProps) {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(output)}
-                      title="Delete"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        
+        {editingOutput && (
+          <EditStockOutputDialog
+            stockOutput={editingOutput}
+            open={!!editingOutput}
+            onOpenChange={(open) => !open && setEditingOutput(null)}
+            onSuccess={loadStockOutputs}
+          />
+        )}
       </CardContent>
     </Card>
   );

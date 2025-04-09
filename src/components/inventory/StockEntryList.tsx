@@ -8,6 +8,7 @@ import { Edit, Package, Printer, Trash2 } from "lucide-react";
 import { getStockEntriesForProduct } from "@/services/stockEntryService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { EditStockEntryDialog } from "./EditStockEntryDialog";
 
 interface StockEntryListProps {
   product: Product;
@@ -17,23 +18,24 @@ export function StockEntryList({ product }: StockEntryListProps) {
   const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
 
   useEffect(() => {
-    async function loadStockEntries() {
-      try {
-        setLoading(true);
-        setError(null); // Reset any previous errors
-        const entries = await getStockEntriesForProduct(product.id);
-        setStockEntries(entries);
-      } catch (err) {
-        setError("Error loading stock entries. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    
     loadStockEntries();
   }, [product.id]);
+
+  async function loadStockEntries() {
+    try {
+      setLoading(true);
+      setError(null); // Reset any previous errors
+      const entries = await getStockEntriesForProduct(product.id);
+      setStockEntries(entries);
+    } catch (err) {
+      setError("Error loading stock entries. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handlePrint = (entry: StockEntry) => {
     const printWindow = window.open('', '_blank');
@@ -111,20 +113,7 @@ export function StockEntryList({ product }: StockEntryListProps) {
   };
 
   const handleUpdate = (entry: StockEntry) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would open a modal or navigate to an edit page
-    toast.info(`Update stock entry ID: ${entry.id} functionality would go here`);
-  };
-
-  const handleDelete = (entry: StockEntry) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would perform the deletion
-    if (entry.remaining_quantity < entry.quantity) {
-      toast.error("Cannot delete entry that has been partially consumed");
-      return;
-    }
-    
-    toast.info(`Delete stock entry ID: ${entry.id} functionality would go here`);
+    setEditingEntry(entry);
   };
 
   if (loading) {
@@ -221,19 +210,8 @@ export function StockEntryList({ product }: StockEntryListProps) {
                       size="icon" 
                       onClick={() => handleUpdate(entry)}
                       title="Edit"
-                      disabled={entry.remaining_quantity < entry.quantity}
                     >
                       <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(entry)}
-                      title="Delete"
-                      disabled={entry.remaining_quantity < entry.quantity}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -241,6 +219,15 @@ export function StockEntryList({ product }: StockEntryListProps) {
             ))}
           </TableBody>
         </Table>
+        
+        {editingEntry && (
+          <EditStockEntryDialog
+            stockEntry={editingEntry}
+            open={!!editingEntry}
+            onOpenChange={(open) => !open && setEditingEntry(null)}
+            onSuccess={loadStockEntries}
+          />
+        )}
       </CardContent>
     </Card>
   );
