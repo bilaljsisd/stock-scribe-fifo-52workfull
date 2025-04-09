@@ -11,14 +11,7 @@ export async function getProducts(): Promise<Product[]> {
       .order('name');
     
     if (error) throw error;
-    
-    // Process the data to ensure is_expirable is present
-    const products = data?.map(product => ({
-      ...product,
-      is_expirable: product.is_expirable !== undefined ? product.is_expirable : false
-    })) || [];
-    
-    return products as Product[];
+    return data || [];
   } catch (error) {
     console.error('Error fetching products:', error);
     toast.error('Failed to load products');
@@ -35,14 +28,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       .single();
     
     if (error) throw error;
-    
-    // Add is_expirable if it's missing
-    const product = {
-      ...data,
-      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
-    };
-    
-    return product as Product;
+    return data;
   } catch (error) {
     console.error(`Error fetching product with id ${id}:`, error);
     toast.error('Failed to load product details');
@@ -59,22 +45,14 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
         sku: product.sku,
         description: product.description || null,
         current_stock: 0,
-        average_cost: 0,
-        is_expirable: product.is_expirable
+        average_cost: 0
       })
       .select()
       .single();
     
     if (error) throw error;
-    
-    // Ensure is_expirable is properly set
-    const fullProduct = {
-      ...data,
-      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
-    };
-    
     toast.success(`Product ${product.name} added`);
-    return fullProduct as Product;
+    return data;
   } catch (error) {
     console.error('Error creating product:', error);
     toast.error('Failed to create product');
@@ -90,7 +68,6 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
         name: product.name,
         sku: product.sku,
         description: product.description,
-        is_expirable: product.is_expirable,
         updated_at: new Date().toISOString()
       })
       .eq('id', product.id)
@@ -98,15 +75,8 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
       .single();
     
     if (error) throw error;
-    
-    // Ensure is_expirable is properly set
-    const fullProduct = {
-      ...data,
-      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
-    };
-    
     toast.success(`Product ${product.name} updated`);
-    return fullProduct as Product;
+    return data;
   } catch (error) {
     console.error('Error updating product:', error);
     toast.error('Failed to update product');

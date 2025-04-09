@@ -9,17 +9,13 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
       .from('stock_entries')
       .select('*')
       .eq('product_id', productId)
-      .order('entry_date', { ascending: false });
-    
+      .order('entry_date');
+
     if (error) throw error;
-    
-    // Ensure expiry_date is present in the data
-    const stockEntries = data?.map(entry => ({
-      ...entry,
-      expiry_date: entry.expiry_date || null
-    })) || [];
-    
-    return stockEntries as StockEntry[];
+
+    console.log("Stock Entries:", data);  // Log the response data here to inspect it
+
+    return data || [];
   } catch (error) {
     console.error('Error fetching stock entries:', error);
     toast.error('Failed to load stock entries');
@@ -27,37 +23,42 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
   }
 }
 
-export async function addStockEntry(stockEntry: Omit<StockEntry, 'id' | 'created_at' | 'remaining_quantity'>): Promise<StockEntry | null> {
+
+
+export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>): Promise<StockEntry | null> {
   try {
-    const entry = {
-      ...stockEntry,
-      remaining_quantity: stockEntry.quantity,
-    };
-    
-    const { data, error } = await supabase
+    // Start a transaction
+    const { data: stockEntry, error: stockEntryError } = await supabase
       .from('stock_entries')
-      .insert(entry)
+      .insert({
+        product_id: entry.product_id,
+        quantity: entry.quantity,
+        remaining_quantity: entry.quantity,
+        unit_price: entry.unit_price,
+        entry_date: entry.entry_date,
+        notes: entry.notes
+      })
       .select()
       .single();
     
-    if (error) throw error;
+    if (stockEntryError) throw stockEntryError;
     
-    // Update product's current_stock and average_cost
-    const { error: updateError } = await supabase
-      .rpc('update_product_stock_and_cost', {
-        product_id: stockEntry.product_id
+    // Create a transaction record - be specific with column names to avoid ambiguity
+    const { error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        type: 'entry',
+        product_id: entry.product_id,
+        quantity: entry.quantity,
+        date: entry.entry_date,
+        reference_id: stockEntry?.id,
+        notes: entry.notes
       });
     
-    if (updateError) throw updateError;
+    if (transactionError) throw transactionError;
     
-    // Ensure expiry_date is present
-    const fullData = {
-      ...data,
-      expiry_date: data.expiry_date || null
-    };
-    
-    toast.success(`Added ${stockEntry.quantity} units to inventory`);
-    return fullData as StockEntry;
+    toast.success(`Added ${entry.quantity} units to inventory`);
+    return stockEntry;
   } catch (error) {
     console.error('Error adding stock entry:', error);
     toast.error('Failed to add stock entry');
