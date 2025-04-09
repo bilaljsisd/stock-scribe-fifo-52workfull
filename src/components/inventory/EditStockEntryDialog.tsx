@@ -19,7 +19,11 @@ import { toast } from "sonner";
 
 const stockEntrySchema = z.object({
   quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }).refine(
-    (val) => val >= initialQuantity - (initialQuantity - remainingQuantity),
+    (val, ctx) => {
+      const initialQty = ctx.path && ctx.path[0] === 'quantity' && 'stockEntry' in ctx.common ? (ctx.common.stockEntry as StockEntry).quantity : 0;
+      const remainingQty = ctx.path && ctx.path[0] === 'quantity' && 'stockEntry' in ctx.common ? (ctx.common.stockEntry as StockEntry).remaining_quantity : 0;
+      return val >= initialQty - (initialQty - remainingQty);
+    },
     {
       message: "Cannot reduce quantity below what has already been consumed.",
     }
@@ -40,10 +44,6 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Store initial values for validation
-  const initialQuantity = stockEntry.quantity;
-  const remainingQuantity = stockEntry.remaining_quantity;
-  
   const form = useForm<z.infer<typeof stockEntrySchema>>({
     resolver: zodResolver(stockEntrySchema),
     defaultValues: {
@@ -51,6 +51,9 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
       unitPrice: stockEntry.unit_price,
       entryDate: new Date(stockEntry.entry_date),
       notes: stockEntry.notes || "",
+    },
+    context: {
+      stockEntry,
     },
   });
 

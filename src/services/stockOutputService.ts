@@ -29,15 +29,33 @@ export async function createStockOutput(
 ): Promise<StockOutput | null> {
   try {
     // This function would call a Supabase function or RPC that handles the FIFO logic
-    const { data, error } = await supabase.rpc('create_stock_output', {
-      p_product_id: productId,
-      p_quantity: quantity,
-      p_output_date: outputDate,
-      p_reference_number: referenceNumber || null,
-      p_notes: notes || null
+    // For now we use update_product_stock_and_cost as placeholder since create_stock_output doesn't exist
+    const { data: functionData, error: functionError } = await supabase.rpc('update_product_stock_and_cost', {
+      product_id: productId
     });
     
+    if (functionError) throw functionError;
+    
+    // Insert the stock output record
+    const { data, error } = await supabase
+      .from('stock_outputs')
+      .insert({
+        product_id: productId,
+        total_quantity: quantity,
+        total_cost: 0, // Will be calculated based on FIFO allocation
+        output_date: outputDate,
+        reference_number: referenceNumber || null,
+        notes: notes || null
+      })
+      .select()
+      .single();
+    
     if (error) throw error;
+    
+    // Update stock and cost after creating the output
+    await supabase.rpc('update_product_stock_and_cost', {
+      product_id: productId
+    });
     
     if (data) {
       toast.success(`${quantity} units withdrawn successfully`);
@@ -74,12 +92,27 @@ export async function updateStockOutput(
 
 export async function deleteStockOutput(id: string): Promise<boolean> {
   try {
-    // This would ideally call a Supabase function that handles reverting the FIFO allocation
-    const { error } = await supabase.rpc('delete_stock_output', {
-      p_output_id: id
-    });
+    // Get the product_id before deleting
+    const { data: outputData } = await supabase
+      .from('stock_outputs')
+      .select('product_id')
+      .eq('id', id)
+      .single();
+    
+    if (!outputData) throw new Error('Stock output not found');
+    
+    // Delete the stock output
+    const { error } = await supabase
+      .from('stock_outputs')
+      .delete()
+      .eq('id', id);
     
     if (error) throw error;
+    
+    // Update product stock and cost after deletion
+    await supabase.rpc('update_product_stock_and_cost', {
+      product_id: outputData.product_id
+    });
     
     return true;
   } catch (error) {

@@ -7,7 +7,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
     // Get stock entries as transactions
     const { data: entriesData, error: entriesError } = await supabase
       .from('stock_entries')
-      .select('id, product_id, quantity, unit_price, entry_date as date, notes, created_at')
+      .select('id, product_id, quantity, unit_price, entry_date, notes, created_at')
       .order('entry_date', { ascending: false });
     
     if (entriesError) throw entriesError;
@@ -18,7 +18,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       type: 'entry',
       product_id: entry.product_id,
       quantity: entry.quantity,
-      date: entry.date,
+      date: entry.entry_date,
       notes: entry.notes,
       created_at: entry.created_at,
       unit_price: entry.unit_price,
@@ -27,7 +27,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
     // Get stock outputs as transactions
     const { data: outputsData, error: outputsError } = await supabase
       .from('stock_outputs')
-      .select('id, product_id, total_quantity, total_cost, output_date as date, notes, created_at, reference_number')
+      .select('id, product_id, total_quantity, total_cost, output_date, notes, created_at, reference_number')
       .order('output_date', { ascending: false });
     
     if (outputsError) throw outputsError;
@@ -38,7 +38,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       type: 'output',
       product_id: output.product_id,
       quantity: output.total_quantity,
-      date: output.date,
+      date: output.output_date,
       notes: output.notes,
       created_at: output.created_at,
       total_cost: output.total_cost,
