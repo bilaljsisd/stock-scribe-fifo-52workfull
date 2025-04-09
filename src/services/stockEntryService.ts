@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { StockEntry, Transaction } from "@/types/supabase";
+import { StockEntry } from "@/types/supabase";
 import { toast } from "sonner";
 
 export async function getStockEntriesForProduct(productId: string): Promise<StockEntry[]> {
@@ -46,7 +46,7 @@ export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>
         product_id: entry.product_id,
         quantity: entry.quantity,
         date: entry.entry_date,
-        reference_id: stockEntry.id,
+        reference_id: stockEntry?.id,
         notes: entry.notes
       });
     

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { useState } from "react";
 import { Product } from "@/types/supabase";
 import { createProduct, updateProduct } from "@/services/productService";
@@ -45,6 +44,7 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
           ...data,
         });
       } else {
+        // Ensure all required fields are provided when creating a product
         await createProduct({
           name: data.name,
           sku: data.sku,

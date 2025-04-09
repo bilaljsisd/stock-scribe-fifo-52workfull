@@ -38,10 +38,15 @@ export async function createStockOutput(
     
     if (entriesError) throw entriesError;
     
+    if (!availableEntries) {
+      toast.error("No available stock entries found");
+      return null;
+    }
+    
     // Calculate total available quantity
-    const totalAvailable = availableEntries ? availableEntries.reduce(
+    const totalAvailable = availableEntries.reduce(
       (sum, entry) => sum + entry.remaining_quantity, 0
-    ) : 0;
+    );
     
     if (totalAvailable < quantity) {
       toast.error(`Insufficient stock. Only ${totalAvailable} units available`);
@@ -64,12 +69,17 @@ export async function createStockOutput(
     
     if (outputError) throw outputError;
     
+    if (!stockOutput) {
+      toast.error("Failed to create stock output");
+      return null;
+    }
+    
     // Apply FIFO logic to create output lines
     let remainingToFulfill = quantity;
     let totalCost = 0;
     const outputLines: Omit<StockOutputLine, 'id' | 'created_at'>[] = [];
     
-    for (const entry of availableEntries!) {
+    for (const entry of availableEntries) {
       if (remainingToFulfill <= 0) break;
       
       const quantityFromThisEntry = Math.min(remainingToFulfill, entry.remaining_quantity);
@@ -129,7 +139,7 @@ export async function createStockOutput(
     if (transactionError) throw transactionError;
     
     toast.success(`Withdrew ${quantity} units using FIFO method`);
-    return updatedOutput;
+    return updatedOutput || stockOutput;
   } catch (error) {
     console.error('Error creating stock output:', error);
     toast.error('Failed to create stock output');
