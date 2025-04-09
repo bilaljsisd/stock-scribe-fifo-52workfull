@@ -180,7 +180,7 @@ export async function deleteStockOutput(id: string): Promise<boolean> {
             table_name: 'stock_entries',
             column_name: 'remaining_quantity',
             value: line.quantity
-          })
+          }) as any
         })
         .eq('id', line.stock_entry_id);
       
