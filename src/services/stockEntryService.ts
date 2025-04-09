@@ -8,7 +8,7 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
     const { data, error } = await supabase
       .from('stock_entries')
       .select('*')
-      .eq('product_id', productId)
+      .eq('stock_entries.product_id', productId)
       .order('entry_date');
     
     if (error) throw error;

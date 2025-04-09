@@ -16,8 +16,8 @@ import { Product } from "@/types/supabase";
 import { addStockEntry } from "@/services/stockEntryService";
 
 const stockEntrySchema = z.object({
-  quantity: z.number().positive({ message: "Quantity must be greater than 0." }),
-  unitPrice: z.number().nonnegative({ message: "Unit price must be 0 or greater." }),
+  quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }),
+  unitPrice: z.coerce.number().nonnegative({ message: "Unit price must be 0 or greater." }),
   entryDate: z.date({ required_error: "Please select a date." }),
   notes: z.string().optional(),
 });
@@ -35,7 +35,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
   const form = useForm<StockEntryFormValues>({
     resolver: zodResolver(stockEntrySchema),
     defaultValues: {
-      quantity: 0,  // Initialize with numeric values to avoid controlled/uncontrolled warning
+      quantity: 0,
       unitPrice: 0,
       entryDate: new Date(),
       notes: "",
@@ -85,7 +85,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
                   type="number" 
                   placeholder="Enter quantity" 
                   {...field} 
-                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                 />
               </FormControl>
               <FormMessage />
@@ -105,7 +105,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
                   step="0.01" 
                   placeholder="Enter unit price" 
                   {...field} 
-                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                 />
               </FormControl>
               <FormMessage />
