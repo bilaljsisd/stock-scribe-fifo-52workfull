@@ -20,7 +20,8 @@ export async function getStockOutputsForProduct(productId: string): Promise<Stoc
   }
 }
 
-export async function createStockOutput(stockOutput: Omit<StockOutput, 'id' | 'created_at'>): Promise<StockOutput | null> {
+// Simple version for direct insertion of a stock output record
+export async function createStockOutputRecord(stockOutput: Omit<StockOutput, 'id' | 'created_at'>): Promise<StockOutput | null> {
   try {
     const { data, error } = await supabase
       .from('stock_outputs')
@@ -31,10 +32,14 @@ export async function createStockOutput(stockOutput: Omit<StockOutput, 'id' | 'c
     if (error) throw error;
     toast.success(`Successfully withdrew ${stockOutput.total_quantity} units from inventory`);
     return data;
+  } catch (error) {
+    console.error('Error creating stock output record:', error);
+    toast.error('Failed to create stock output');
+    return null;
   }
 }
 
-// Helper function to match StockOutputForm's call pattern
+// Main function to match StockOutputForm's call pattern
 export async function createStockOutput(
   productId: string,
   quantity: number,
