@@ -45,7 +45,8 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
         sku: product.sku,
         description: product.description || null,
         current_stock: 0,
-        average_cost: 0
+        average_cost: 0,
+        is_expirable: product.is_expirable || false
       })
       .select()
       .single();
@@ -68,6 +69,7 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
         name: product.name,
         sku: product.sku,
         description: product.description,
+        is_expirable: product.is_expirable,
         updated_at: new Date().toISOString()
       })
       .eq('id', product.id)

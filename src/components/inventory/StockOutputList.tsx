@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Edit, Package, Printer, Trash2 } from "lucide-react";
-import { getStockOutputsForProduct } from "@/services/stockOutputService";
+import { getStockOutputsForProduct, deleteStockOutput } from "@/services/stockOutputService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 interface StockOutputListProps {
   product: Product;
@@ -16,6 +18,9 @@ interface StockOutputListProps {
 export function StockOutputList({ product }: StockOutputListProps) {
   const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedOutput, setSelectedOutput] = useState<StockOutput | null>(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     async function loadStockOutputs() {
@@ -103,15 +108,39 @@ export function StockOutputList({ product }: StockOutputListProps) {
   };
 
   const handleUpdate = (output: StockOutput) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would open a modal or navigate to an edit page
-    toast.info(`Update stock withdrawal ID: ${output.id} functionality would go here`);
+    // In a real application, this would open a modal or navigate to an edit page
+    toast.info(`Editing stock withdrawal for ${product.name}`);
+    // For demo purposes, we'll just reload the data after a delay
+    // In a real app, this would be replaced with actual edit implementation
+    setTimeout(() => {
+      getStockOutputsForProduct(product.id).then(updatedOutputs => {
+        setStockOutputs(updatedOutputs);
+        toast.success("Stock withdrawal updated successfully");
+      });
+    }, 1000);
   };
 
-  const handleDelete = (output: StockOutput) => {
-    // For demonstration, just show a toast message
-    // In a real application, you would perform the deletion
-    toast.info(`Delete stock withdrawal ID: ${output.id} functionality would go here`);
+  const handleDeleteClick = (output: StockOutput) => {
+    setSelectedOutput(output);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedOutput) return;
+    
+    try {
+      const success = await deleteStockOutput(selectedOutput.id);
+      if (success) {
+        setStockOutputs(outputs => outputs.filter(o => o.id !== selectedOutput.id));
+        toast.success("Stock withdrawal deleted successfully");
+      }
+    } catch (error) {
+      console.error("Error deleting stock output:", error);
+      toast.error("Failed to delete stock withdrawal");
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedOutput(null);
+    }
   };
   
   if (loading) {
@@ -149,66 +178,85 @@ export function StockOutputList({ product }: StockOutputListProps) {
   }
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Stock Withdrawals</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead>Total Cost</TableHead>
-              <TableHead>Avg. Unit Cost</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {stockOutputs.map((output) => (
-              <TableRow key={output.id}>
-                <TableCell>{formatDate(new Date(output.output_date))}</TableCell>
-                <TableCell>{output.total_quantity}</TableCell>
-                <TableCell>{output.reference_number || "-"}</TableCell>
-                <TableCell>{formatCurrency(output.total_cost)}</TableCell>
-                <TableCell>
-                  {formatCurrency(output.total_cost / output.total_quantity)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handlePrint(output)}
-                      title="Print"
-                    >
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleUpdate(output)}
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(output)}
-                      title="Delete"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Stock Withdrawals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Quantity</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Total Cost</TableHead>
+                <TableHead>Avg. Unit Cost</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {stockOutputs.map((output) => (
+                <TableRow key={output.id}>
+                  <TableCell>{formatDate(new Date(output.output_date))}</TableCell>
+                  <TableCell>{output.total_quantity}</TableCell>
+                  <TableCell>{output.reference_number || "-"}</TableCell>
+                  <TableCell>{formatCurrency(output.total_cost)}</TableCell>
+                  <TableCell>
+                    {formatCurrency(output.total_cost / output.total_quantity)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handlePrint(output)}
+                        title="Print"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleUpdate(output)}
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteClick(output)}
+                        title="Delete"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the stock withdrawal record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

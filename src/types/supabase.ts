@@ -6,6 +6,7 @@ export interface Product {
   description: string | null;
   current_stock: number;
   average_cost: number;
+  is_expirable: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface StockEntry {
   remaining_quantity: number;
   unit_price: number;
   entry_date: string;
+  expiry_date: string | null;
   notes: string | null;
   created_at: string;
 }

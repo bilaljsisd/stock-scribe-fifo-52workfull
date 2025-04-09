@@ -5,16 +5,17 @@ import { toast } from "sonner";
 
 export async function getStockEntriesForProduct(productId: string): Promise<StockEntry[]> {
   try {
+    console.info("Fetching stock entries for product:", productId);
+    
     const { data, error } = await supabase
       .from('stock_entries')
       .select('*')
       .eq('product_id', productId)
-      .order('entry_date');
-
+      .order('entry_date', { ascending: false });
+    
     if (error) throw error;
-
-    console.log("Stock Entries:", data);  // Log the response data here to inspect it
-
+    
+    console.info("Stock Entries:", data);
     return data || [];
   } catch (error) {
     console.error('Error fetching stock entries:', error);
@@ -23,45 +24,70 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
   }
 }
 
-
-
-export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>): Promise<StockEntry | null> {
+export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at' | 'remaining_quantity'>): Promise<StockEntry | null> {
   try {
-    // Start a transaction
-    const { data: stockEntry, error: stockEntryError } = await supabase
+    // Make sure to set remaining_quantity equal to quantity for new entries
+    const entryWithRemaining = {
+      ...entry,
+      remaining_quantity: entry.quantity
+    };
+    
+    const { data, error } = await supabase
       .from('stock_entries')
-      .insert({
-        product_id: entry.product_id,
-        quantity: entry.quantity,
-        remaining_quantity: entry.quantity,
-        unit_price: entry.unit_price,
-        entry_date: entry.entry_date,
-        notes: entry.notes
-      })
+      .insert(entryWithRemaining)
       .select()
       .single();
     
-    if (stockEntryError) throw stockEntryError;
+    if (error) throw error;
     
-    // Create a transaction record - be specific with column names to avoid ambiguity
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        type: 'entry',
-        product_id: entry.product_id,
-        quantity: entry.quantity,
-        date: entry.entry_date,
-        reference_id: stockEntry?.id,
-        notes: entry.notes
-      });
-    
-    if (transactionError) throw transactionError;
+    // Update product's current_stock and average_cost
+    await updateProductStockInfo(entry.product_id);
     
     toast.success(`Added ${entry.quantity} units to inventory`);
-    return stockEntry;
+    return data;
   } catch (error) {
     console.error('Error adding stock entry:', error);
     toast.error('Failed to add stock entry');
     return null;
+  }
+}
+
+export async function updateProductStockInfo(productId: string): Promise<void> {
+  try {
+    // Get all stock entries for this product
+    const { data: entries, error: entriesError } = await supabase
+      .from('stock_entries')
+      .select('*')
+      .eq('product_id', productId);
+    
+    if (entriesError) throw entriesError;
+    
+    if (!entries) return;
+    
+    // Calculate current stock and average cost
+    let totalStock = 0;
+    let totalValue = 0;
+    
+    for (const entry of entries) {
+      totalStock += entry.remaining_quantity;
+      totalValue += entry.remaining_quantity * entry.unit_price;
+    }
+    
+    const averageCost = totalStock > 0 ? totalValue / totalStock : 0;
+    
+    // Update the product
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        current_stock: totalStock,
+        average_cost: averageCost,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
+    
+    if (updateError) throw updateError;
+  } catch (error) {
+    console.error('Error updating product stock info:', error);
+    // Don't show toast here, as this is a background operation
   }
 }
