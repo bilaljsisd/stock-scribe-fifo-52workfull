@@ -14,11 +14,12 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { StockOutput } from "@/types/supabase";
-import { updateStockOutput, deleteStockOutput, getStockOutputsForProduct } from "@/services/stockOutputService";
+import { updateStockOutput, deleteStockOutput, updateStockOutputQuantity } from "@/services/stockOutputService";
 import { toast } from "sonner";
 
 const stockOutputSchema = z.object({
   outputDate: z.date({ required_error: "Please select a date." }),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   referenceNumber: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -38,6 +39,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
     resolver: zodResolver(stockOutputSchema),
     defaultValues: {
       outputDate: new Date(stockOutput.output_date),
+      quantity: stockOutput.total_quantity,
       referenceNumber: stockOutput.reference_number || "",
       notes: stockOutput.notes || "",
     },
@@ -46,12 +48,30 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
   async function onSubmit(data: z.infer<typeof stockOutputSchema>) {
     setIsSubmitting(true);
     try {
-      await updateStockOutput({
-        id: stockOutput.id,
-        output_date: data.outputDate.toISOString(),
-        reference_number: data.referenceNumber || null,
-        notes: data.notes || null,
-      });
+      // If quantity changed, use special update function
+      if (data.quantity !== stockOutput.total_quantity) {
+        const result = await updateStockOutputQuantity(
+          stockOutput.id,
+          data.quantity,
+          data.outputDate.toISOString(),
+          data.referenceNumber || null,
+          data.notes || null
+        );
+        
+        if (!result) {
+          toast.error("Failed to update quantity. Please check available stock.");
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        // If only other fields changed, use regular update
+        await updateStockOutput({
+          id: stockOutput.id,
+          output_date: data.outputDate.toISOString(),
+          reference_number: data.referenceNumber || null,
+          notes: data.notes || null,
+        });
+      }
       
       toast.success("Stock withdrawal updated successfully");
       onOpenChange(false);
@@ -92,22 +112,41 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Quantity</label>
-                <p className="text-muted-foreground p-2 border rounded-md bg-muted/30">
-                  {stockOutput.total_quantity} units
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Total Cost</label>
-                <p className="text-muted-foreground p-2 border rounded-md bg-muted/30">
-                  ${stockOutput.total_cost.toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ${(stockOutput.total_cost / stockOutput.total_quantity).toFixed(2)} per unit
-                </p>
-              </div>
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      {...field}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        field.onChange(value > 0 ? value : 1);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  {field.value !== stockOutput.total_quantity && (
+                    <p className="text-xs text-amber-500 mt-1">
+                      Changing quantity will recalculate costs using FIFO method
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+            
+            <div>
+              <label className="text-sm font-medium">Total Cost</label>
+              <p className="text-muted-foreground p-2 border rounded-md bg-muted/30">
+                ${stockOutput.total_cost.toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                ${(stockOutput.total_cost / stockOutput.total_quantity).toFixed(2)} per unit
+              </p>
             </div>
             
             <FormField

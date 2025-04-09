@@ -128,6 +128,200 @@ export async function createStockOutput(
   }
 }
 
+export async function updateStockOutputQuantity(
+  outputId: string,
+  newQuantity: number,
+  outputDate: string,
+  referenceNumber?: string | null,
+  notes?: string | null
+): Promise<StockOutput | null> {
+  try {
+    // 1. Get the current output data including product_id
+    const { data: currentOutput, error: outputError } = await supabase
+      .from('stock_outputs')
+      .select('*')
+      .eq('id', outputId)
+      .single();
+    
+    if (outputError || !currentOutput) throw outputError || new Error('Stock output not found');
+    
+    // 2. Restore all inventory from the current output lines
+    // Get all lines for this output
+    const { data: linesData, error: linesError } = await supabase
+      .from('stock_output_lines')
+      .select('*')
+      .eq('stock_output_id', outputId);
+    
+    if (linesError) throw linesError;
+    
+    const productId = currentOutput.product_id;
+    
+    // Restore stock to entries
+    for (const line of linesData || []) {
+      const { data: entryData, error: getEntryError } = await supabase
+        .from('stock_entries')
+        .select('remaining_quantity')
+        .eq('id', line.stock_entry_id)
+        .single();
+      
+      if (getEntryError) throw getEntryError;
+      
+      const newRemainingQuantity = entryData.remaining_quantity + line.quantity;
+      
+      const { error: updateError } = await supabase
+        .from('stock_entries')
+        .update({
+          remaining_quantity: newRemainingQuantity
+        })
+        .eq('id', line.stock_entry_id);
+      
+      if (updateError) throw updateError;
+    }
+    
+    // 3. Delete old output lines
+    const { error: deleteLineError } = await supabase
+      .from('stock_output_lines')
+      .delete()
+      .eq('stock_output_id', outputId);
+    
+    if (deleteLineError) throw deleteLineError;
+    
+    // 4. Get available stock entries using FIFO order (oldest first)
+    const { data: entriesData, error: entriesError } = await supabase
+      .from('stock_entries')
+      .select('*')
+      .eq('product_id', productId)
+      .gt('remaining_quantity', 0)
+      .order('entry_date', { ascending: true });
+    
+    if (entriesError) throw entriesError;
+    
+    const entries = entriesData || [];
+    const totalAvailable = entries.reduce((sum, entry) => sum + entry.remaining_quantity, 0);
+    
+    if (totalAvailable < newQuantity) {
+      toast.error(`Insufficient stock. Only ${totalAvailable} units available.`);
+      
+      // Recreate the original output and lines to maintain consistency
+      await recreateOriginalOutput(currentOutput, linesData || []);
+      return null;
+    }
+    
+    // 5. Update the stock output record
+    const { data: outputData, error: updateOutputError } = await supabase
+      .from('stock_outputs')
+      .update({
+        total_quantity: newQuantity,
+        total_cost: 0, // Will calculate based on actual allocations
+        output_date: outputDate,
+        reference_number: referenceNumber,
+        notes: notes
+      })
+      .eq('id', outputId)
+      .select()
+      .single();
+    
+    if (updateOutputError) throw updateOutputError;
+    
+    // 6. Allocate stock from entries using FIFO (similar to createStockOutput)
+    let remainingToAllocate = newQuantity;
+    let totalCost = 0;
+    
+    for (const entry of entries) {
+      if (remainingToAllocate <= 0) break;
+      
+      const quantityFromEntry = Math.min(remainingToAllocate, entry.remaining_quantity);
+      const cost = quantityFromEntry * entry.unit_price;
+      
+      // Create output line
+      const { error: lineError } = await supabase
+        .from('stock_output_lines')
+        .insert({
+          stock_output_id: outputId,
+          stock_entry_id: entry.id,
+          quantity: quantityFromEntry,
+          unit_price: entry.unit_price
+        });
+        
+      if (lineError) throw lineError;
+      
+      // Update remaining quantity in the entry
+      const { error: updateError } = await supabase
+        .from('stock_entries')
+        .update({
+          remaining_quantity: entry.remaining_quantity - quantityFromEntry
+        })
+        .eq('id', entry.id);
+        
+      if (updateError) throw updateError;
+      
+      totalCost += cost;
+      remainingToAllocate -= quantityFromEntry;
+    }
+    
+    // 7. Update the total cost in the output record
+    const { data: updatedOutput, error: finalUpdateError } = await supabase
+      .from('stock_outputs')
+      .update({ total_cost: totalCost })
+      .eq('id', outputId)
+      .select()
+      .single();
+      
+    if (finalUpdateError) throw finalUpdateError;
+    
+    // 8. Update product's current stock and average cost
+    await updateProductStock(productId);
+    
+    return updatedOutput;
+  } catch (error) {
+    console.error('Error updating stock output quantity:', error);
+    throw error;
+  }
+}
+
+// Helper to recreate the original output if update fails
+async function recreateOriginalOutput(originalOutput: StockOutput, originalLines: any[]): Promise<void> {
+  try {
+    // Recreate original output lines
+    for (const line of originalLines) {
+      // Deduct from stock entry again
+      const { data: entryData, error: getEntryError } = await supabase
+        .from('stock_entries')
+        .select('remaining_quantity')
+        .eq('id', line.stock_entry_id)
+        .single();
+      
+      if (getEntryError) throw getEntryError;
+      
+      // Update entry with original deduction
+      await supabase
+        .from('stock_entries')
+        .update({
+          remaining_quantity: entryData.remaining_quantity - line.quantity
+        })
+        .eq('id', line.stock_entry_id);
+      
+      // Recreate output line
+      await supabase
+        .from('stock_output_lines')
+        .insert({
+          stock_output_id: originalOutput.id,
+          stock_entry_id: line.stock_entry_id,
+          quantity: line.quantity,
+          unit_price: line.unit_price
+        });
+    }
+    
+    // No need to update the output record as it wasn't changed
+    
+    // Update product stock
+    await updateProductStock(originalOutput.product_id);
+  } catch (error) {
+    console.error('Error recreating original output:', error);
+    // Just log the error but continue, as this is a fallback operation
+  }
+}
+
 export async function updateStockOutput(
   output: Pick<StockOutput, 'id'> & Partial<Omit<StockOutput, 'id' | 'created_at' | 'product_id' | 'total_quantity' | 'total_cost'>>
 ): Promise<StockOutput | null> {
