@@ -12,7 +12,9 @@ export async function getTransactionsForProduct(productId: string): Promise<Tran
       .order('date', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Cast the type to ensure it matches the expected Transaction type
+    return (data as Transaction[]) || [];
   } catch (error) {
     console.error('Error fetching transactions:', error);
     toast.error('Failed to load transactions');
@@ -28,7 +30,9 @@ export async function getAllTransactions(): Promise<Transaction[]> {
       .order('date', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Cast the type to ensure it matches the expected Transaction type
+    return (data as Transaction[]) || [];
   } catch (error) {
     console.error('Error fetching transactions:', error);
     toast.error('Failed to load transactions');
