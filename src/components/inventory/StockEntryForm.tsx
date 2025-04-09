@@ -35,8 +35,8 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
   const form = useForm<StockEntryFormValues>({
     resolver: zodResolver(stockEntrySchema),
     defaultValues: {
-      quantity: undefined,
-      unitPrice: undefined,
+      quantity: 0,  // Initialize with numeric values to avoid controlled/uncontrolled warning
+      unitPrice: 0,
       entryDate: new Date(),
       notes: "",
     },
@@ -54,7 +54,12 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
         notes: data.notes || null,
       });
       
-      form.reset();
+      form.reset({
+        quantity: 0,
+        unitPrice: 0,
+        entryDate: new Date(),
+        notes: "",
+      });
       
       if (onSuccess) {
         onSuccess();

@@ -38,7 +38,7 @@ export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>
     
     if (stockEntryError) throw stockEntryError;
     
-    // Create a transaction record
+    // Create a transaction record - be specific with column names to avoid ambiguity
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
