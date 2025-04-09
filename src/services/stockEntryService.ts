@@ -12,7 +12,14 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
       .order('entry_date', { ascending: false });
     
     if (error) throw error;
-    return data as StockEntry[] || [];
+    
+    // Check if expiry_date is missing in the data and add it
+    const stockEntries = data?.map(entry => ({
+      ...entry,
+      expiry_date: entry.expiry_date || null
+    })) || [];
+    
+    return stockEntries as StockEntry[];
   } catch (error) {
     console.error('Error fetching stock entries:', error);
     toast.error('Failed to load stock entries');
@@ -43,8 +50,14 @@ export async function addStockEntry(stockEntry: Omit<StockEntry, 'id' | 'created
     
     if (updateError) throw updateError;
     
+    // Make sure all required fields are present
+    const fullData = {
+      ...data,
+      expiry_date: data.expiry_date || null
+    };
+    
     toast.success(`Added ${stockEntry.quantity} units to inventory`);
-    return data as StockEntry;
+    return fullData as StockEntry;
   } catch (error) {
     console.error('Error adding stock entry:', error);
     toast.error('Failed to add stock entry');

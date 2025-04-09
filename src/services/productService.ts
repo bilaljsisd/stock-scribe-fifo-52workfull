@@ -11,7 +11,14 @@ export async function getProducts(): Promise<Product[]> {
       .order('name');
     
     if (error) throw error;
-    return data as Product[] || [];
+    
+    // Add is_expirable if it's missing
+    const products = data?.map(product => ({
+      ...product,
+      is_expirable: product.is_expirable !== undefined ? product.is_expirable : false
+    })) || [];
+    
+    return products as Product[];
   } catch (error) {
     console.error('Error fetching products:', error);
     toast.error('Failed to load products');
@@ -28,7 +35,14 @@ export async function getProductById(id: string): Promise<Product | null> {
       .single();
     
     if (error) throw error;
-    return data as Product;
+    
+    // Add is_expirable if it's missing
+    const product = {
+      ...data,
+      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
+    };
+    
+    return product as Product;
   } catch (error) {
     console.error(`Error fetching product with id ${id}:`, error);
     toast.error('Failed to load product details');
@@ -52,8 +66,14 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
       .single();
     
     if (error) throw error;
+    
+    const fullProduct = {
+      ...data,
+      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
+    };
+    
     toast.success(`Product ${product.name} added`);
-    return data as Product;
+    return fullProduct as Product;
   } catch (error) {
     console.error('Error creating product:', error);
     toast.error('Failed to create product');
@@ -77,8 +97,14 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
       .single();
     
     if (error) throw error;
+    
+    const fullProduct = {
+      ...data,
+      is_expirable: data.is_expirable !== undefined ? data.is_expirable : false
+    };
+    
     toast.success(`Product ${product.name} updated`);
-    return data;
+    return fullProduct as Product;
   } catch (error) {
     console.error('Error updating product:', error);
     toast.error('Failed to update product');

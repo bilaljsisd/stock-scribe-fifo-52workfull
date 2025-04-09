@@ -21,13 +21,39 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     const today = new Date().toISOString().split('T')[0];
     const futureDateString = futureDate.toISOString().split('T')[0];
     
-    // First check if there are any expirable products
+    // Check for the expiry_date column first
+    const { error: columnCheckError } = await supabase
+      .from('stock_entries')
+      .select('expiry_date')
+      .limit(1);
+    
+    if (columnCheckError) {
+      console.error("Error checking expiry_date column:", columnCheckError);
+      return [];
+    }
+    
+    // Check for the is_expirable column
+    const { error: productColumnCheckError } = await supabase
+      .from('products')
+      .select('is_expirable')
+      .limit(1);
+    
+    if (productColumnCheckError) {
+      console.error("Error checking is_expirable column:", productColumnCheckError);
+      // The is_expirable column doesn't exist yet
+      return [];
+    }
+    
+    // Get products with is_expirable = true
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id')
       .eq('is_expirable', true);
     
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error("Error fetching expirable products:", productsError);
+      return [];
+    }
     
     if (!products || products.length === 0) return [];
     
@@ -48,7 +74,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     
     if (error) {
       console.error("Error in query:", error);
-      throw error;
+      return [];
     }
     
     if (!data || data.length === 0) return [];
@@ -56,7 +82,7 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     // Process the results to format them correctly
     const expiringProducts: Record<string, ExpiringProduct> = {};
     
-    data.forEach((entry) => {
+    data.forEach((entry: any) => {
       const product = entry.products as any;
       const expiryDate = new Date(entry.expiry_date as string);
       const today = new Date();
