@@ -171,14 +171,15 @@ export async function deleteStockOutput(id: string): Promise<boolean> {
     
     // 3. Restore stock to the original entries
     for (const line of linesData || []) {
+      // Update the entry to restore the quantity
       const { error: updateError } = await supabase
         .from('stock_entries')
         .update({
           remaining_quantity: supabase.rpc('increment', { 
-            x: line.quantity,
             row_id: line.stock_entry_id,
+            table_name: 'stock_entries',
             column_name: 'remaining_quantity',
-            table_name: 'stock_entries'
+            value: line.quantity
           })
         })
         .eq('id', line.stock_entry_id);
@@ -215,36 +216,12 @@ export async function deleteStockOutput(id: string): Promise<boolean> {
 // Helper function to update product stock and average cost
 async function updateProductStock(productId: string): Promise<void> {
   try {
-    // Calculate current stock from remaining quantities in entries
-    const { data: entriesData, error: entriesError } = await supabase
-      .from('stock_entries')
-      .select('remaining_quantity, unit_price')
-      .eq('product_id', productId);
+    // Call the Supabase RPC function to update product stock and cost
+    const { error } = await supabase.rpc('update_product_stock_and_cost', {
+      product_id: productId
+    });
     
-    if (entriesError) throw entriesError;
-    
-    const entries = entriesData || [];
-    const currentStock = entries.reduce((sum, entry) => sum + entry.remaining_quantity, 0);
-    
-    // Calculate average cost
-    let totalValue = 0;
-    for (const entry of entries) {
-      totalValue += entry.remaining_quantity * entry.unit_price;
-    }
-    
-    const averageCost = currentStock > 0 ? totalValue / currentStock : 0;
-    
-    // Update product
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({
-        current_stock: currentStock,
-        average_cost: averageCost,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', productId);
-    
-    if (updateError) throw updateError;
+    if (error) throw error;
   } catch (error) {
     console.error('Error updating product stock:', error);
     throw error;
