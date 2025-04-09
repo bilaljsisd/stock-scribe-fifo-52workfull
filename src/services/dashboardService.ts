@@ -21,7 +21,17 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
     const today = new Date().toISOString().split('T')[0];
     const futureDateString = futureDate.toISOString().split('T')[0];
     
-    // Query for stock entries with expiry dates in the next 30 days
+    // First check if there are any expirable products
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('is_expirable', true);
+    
+    if (productsError) throw productsError;
+    
+    if (!products || products.length === 0) return [];
+    
+    // Query for stock entries with expiry dates in the next X days
     const { data, error } = await supabase
       .from('stock_entries')
       .select(`
@@ -37,7 +47,10 @@ export async function getExpiringProducts(daysThreshold = 30): Promise<ExpiringP
       .lte('expiry_date', futureDateString)
       .order('expiry_date');
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error in query:", error);
+      throw error;
+    }
     
     if (!data || data.length === 0) return [];
     
