@@ -149,18 +149,25 @@ const ReportsPage = () => {
               <th>Type</th>
               <th>Product</th>
               <th>Quantity</th>
+              <th>Price</th>
               <th>Notes</th>
             </tr>
           </thead>
           <tbody>
             ${filteredTransactions.map(transaction => {
               const product = products.find(p => p.id === transaction.product_id);
+              // Get price info from the product based on transaction type
+              const price = transaction.type === 'entry' 
+                ? product?.average_cost || 0 
+                : product?.average_cost || 0;
+              
               return `
                 <tr>
                   <td>${formatDate(new Date(transaction.date))}</td>
                   <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
                   <td>${product?.name || 'Unknown Product'}</td>
                   <td>${transaction.quantity}</td>
+                  <td>${formatCurrency(price)}</td>
                   <td>${transaction.notes || '-'}</td>
                 </tr>
               `;
@@ -360,12 +367,16 @@ const ReportsPage = () => {
                         <TableHead>Type</TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Quantity</TableHead>
+                        <TableHead>Price</TableHead>
                         <TableHead>Notes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredTransactions.map((transaction) => {
                         const product = products.find(p => p.id === transaction.product_id);
+                        // Get price info from the product
+                        const price = product?.average_cost || 0;
+                        
                         return (
                           <TableRow key={transaction.id}>
                             <TableCell>{formatDate(new Date(transaction.date))}</TableCell>
@@ -387,6 +398,7 @@ const ReportsPage = () => {
                             </TableCell>
                             <TableCell>{product?.name || 'Unknown Product'}</TableCell>
                             <TableCell>{transaction.quantity}</TableCell>
+                            <TableCell>{formatCurrency(price)}</TableCell>
                             <TableCell>{transaction.notes || '-'}</TableCell>
                           </TableRow>
                         );
