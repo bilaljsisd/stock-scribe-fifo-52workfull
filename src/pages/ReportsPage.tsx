@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Printer, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { getAllTransactions } from "@/services/transactionService";
+import { getAllTransactions, getTransactionFifoDetails } from "@/services/transactionService";
 import { getProducts } from "@/services/productService";
 import { Product, Transaction } from "@/types/supabase";
 
@@ -20,6 +20,9 @@ const ReportsPage = () => {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [expandedRows, setExpandedRows] = useState<{[key: string]: boolean}>({});
+  const [expandedRowDetails, setExpandedRowDetails] = useState<{[key: string]: any[]}>({});
+  const [loadingDetails, setLoadingDetails] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     async function loadData() {
@@ -77,6 +80,38 @@ const ReportsPage = () => {
   // Calculate totals
   const entriesCount = filteredTransactions.filter(t => t.type === 'entry').length;
   const outputsCount = filteredTransactions.filter(t => t.type === 'output').length;
+  
+  // Toggle expanded row and fetch FIFO details if needed
+  const toggleExpandRow = async (transaction: Transaction) => {
+    // Only stock withdrawals (outputs) can be expanded
+    if (transaction.type !== 'output') return;
+    
+    const transactionId = transaction.id;
+    const isCurrentlyExpanded = expandedRows[transactionId] || false;
+    
+    // Update expanded state
+    setExpandedRows(prev => ({
+      ...prev,
+      [transactionId]: !isCurrentlyExpanded
+    }));
+    
+    // If expanding and we don't have details yet, fetch them
+    if (!isCurrentlyExpanded && !expandedRowDetails[transactionId]) {
+      setLoadingDetails(prev => ({ ...prev, [transactionId]: true }));
+      
+      try {
+        const details = await getTransactionFifoDetails(transactionId);
+        setExpandedRowDetails(prev => ({
+          ...prev,
+          [transactionId]: details
+        }));
+      } catch (error) {
+        console.error('Error loading FIFO details:', error);
+      } finally {
+        setLoadingDetails(prev => ({ ...prev, [transactionId]: false }));
+      }
+    }
+  };
   
   // Clear all filters
   const clearFilters = () => {
@@ -372,6 +407,7 @@ const ReportsPage = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead></TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Product</TableHead>
@@ -397,31 +433,98 @@ const ReportsPage = () => {
                           unitPrice = transaction.quantity > 0 ? totalPrice / transaction.quantity : 0;
                         }
                         
+                        const isExpanded = expandedRows[transaction.id] || false;
+                        const canExpand = transaction.type === 'output';
+                        const details = expandedRowDetails[transaction.id] || [];
+                        const isLoadingDetails = loadingDetails[transaction.id] || false;
+                        
                         return (
-                          <TableRow key={transaction.id}>
-                            <TableCell>{formatDate(new Date(transaction.date))}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center">
-                                <div className={`rounded-full p-1 mr-2 ${
-                                  transaction.type === 'entry' 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                  {transaction.type === 'entry' ? (
-                                    <ArrowUpRight className="h-3 w-3" />
-                                  ) : (
-                                    <ArrowDownRight className="h-3 w-3" />
-                                  )}
+                          <>
+                            <TableRow 
+                              key={transaction.id}
+                              className={canExpand ? "cursor-pointer hover:bg-muted/80" : ""}
+                              onClick={canExpand ? () => toggleExpandRow(transaction) : undefined}
+                            >
+                              <TableCell className="w-[40px]">
+                                {canExpand && (
+                                  isExpanded ? 
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </TableCell>
+                              <TableCell>{formatDate(new Date(transaction.date))}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center">
+                                  <div className={`rounded-full p-1 mr-2 ${
+                                    transaction.type === 'entry' 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {transaction.type === 'entry' ? (
+                                      <ArrowUpRight className="h-3 w-3" />
+                                    ) : (
+                                      <ArrowDownRight className="h-3 w-3" />
+                                    )}
+                                  </div>
+                                  {transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}
                                 </div>
-                                {transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}
-                              </div>
-                            </TableCell>
-                            <TableCell>{product?.name || 'Unknown Product'}</TableCell>
-                            <TableCell>{transaction.quantity}</TableCell>
-                            <TableCell>{formatCurrency(unitPrice)}</TableCell>
-                            <TableCell className="font-medium">{formatCurrency(totalPrice)}</TableCell>
-                            <TableCell>{transaction.notes || '-'}</TableCell>
-                          </TableRow>
+                              </TableCell>
+                              <TableCell>{product?.name || 'Unknown Product'}</TableCell>
+                              <TableCell>{transaction.quantity}</TableCell>
+                              <TableCell>{formatCurrency(unitPrice)}</TableCell>
+                              <TableCell className="font-medium">{formatCurrency(totalPrice)}</TableCell>
+                              <TableCell>{transaction.notes || '-'}</TableCell>
+                            </TableRow>
+                            
+                            {/* FIFO Allocation Details for Expanded Output Rows */}
+                            {isExpanded && (
+                              <TableRow className="bg-muted/20 border-0">
+                                <TableCell colSpan={8} className="p-0">
+                                  <div className="py-2 px-4">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">FIFO Allocation Details</div>
+                                    
+                                    {isLoadingDetails ? (
+                                      <div className="flex items-center justify-center py-4">
+                                        <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+                                        <span className="text-sm text-muted-foreground">Loading details...</span>
+                                      </div>
+                                    ) : details.length === 0 ? (
+                                      <div className="text-sm text-muted-foreground italic py-2">No detailed records found</div>
+                                    ) : (
+                                      <div className="rounded-md border bg-background">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead className="py-2">Entry Date</TableHead>
+                                              <TableHead className="py-2">Notes</TableHead>
+                                              <TableHead className="py-2">Quantity</TableHead>
+                                              <TableHead className="py-2">Unit Cost</TableHead>
+                                              <TableHead className="py-2">Subtotal</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {details.map((line) => (
+                                              <TableRow key={line.id} className="border-0 hover:bg-transparent">
+                                                <TableCell className="py-1.5">
+                                                  {line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}
+                                                </TableCell>
+                                                <TableCell className="py-1.5 text-muted-foreground">
+                                                  {line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}
+                                                </TableCell>
+                                                <TableCell className="py-1.5">{line.quantity}</TableCell>
+                                                <TableCell className="py-1.5">{formatCurrency(line.unit_price)}</TableCell>
+                                                <TableCell className="py-1.5">{formatCurrency(line.quantity * line.unit_price)}</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
                         );
                       })}
                     </TableBody>

@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types/supabase";
+import { getStockOutputLines } from "./stockOutputService";
 
 export async function getAllTransactions(): Promise<Transaction[]> {
   try {
@@ -56,6 +57,18 @@ export async function getAllTransactions(): Promise<Transaction[]> {
     return allTransactions;
   } catch (error) {
     console.error('Error fetching transactions:', error);
+    return [];
+  }
+}
+
+// New function to get FIFO allocation details for a stock output transaction
+export async function getTransactionFifoDetails(transactionId: string): Promise<any[]> {
+  if (!transactionId) return [];
+  
+  try {
+    return await getStockOutputLines(transactionId);
+  } catch (error) {
+    console.error('Error fetching transaction FIFO details:', error);
     return [];
   }
 }
