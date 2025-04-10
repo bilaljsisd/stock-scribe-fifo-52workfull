@@ -25,6 +25,7 @@ interface StockOutputLine {
     entry_date: string;
     supplier: string | null;
     invoice_number: string | null;
+    notes: string | null;
   };
 }
 
@@ -96,7 +97,7 @@ export function ViewStockOutputDetailsDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>Entry Date</TableHead>
-                  <TableHead>Supplier/Invoice</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Unit Cost</TableHead>
                   <TableHead>Line Total</TableHead>
@@ -107,16 +108,7 @@ export function ViewStockOutputDetailsDialog({
                   <TableRow key={line.id}>
                     <TableCell>{line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}</TableCell>
                     <TableCell>
-                      {line.stock_entry ? (
-                        <>
-                          {line.stock_entry.supplier || "Unknown"}
-                          {line.stock_entry.invoice_number && (
-                            <span className="block text-xs text-muted-foreground">
-                              Invoice: {line.stock_entry.invoice_number}
-                            </span>
-                          )}
-                        </>
-                      ) : "-"}
+                      {line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}
                     </TableCell>
                     <TableCell>{line.quantity}</TableCell>
                     <TableCell>{formatCurrency(line.unit_price)}</TableCell>
