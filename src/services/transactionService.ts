@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types/supabase";
 import { getStockOutputLines } from "./stockOutputService";
@@ -61,7 +60,7 @@ export async function getAllTransactions(): Promise<Transaction[]> {
   }
 }
 
-// New function to get FIFO allocation details for a stock output transaction
+// Function to get FIFO allocation details for a stock output transaction
 export async function getTransactionFifoDetails(transactionId: string): Promise<any[]> {
   if (!transactionId) return [];
   

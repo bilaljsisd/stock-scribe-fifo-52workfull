@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, Printer, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Printer, ChevronDown, ChevronRight, Loader2, FileText } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,12 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { getAllTransactions, getTransactionFifoDetails } from "@/services/transactionService";
 import { getProducts } from "@/services/productService";
 import { Product, Transaction } from "@/types/supabase";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 const ReportsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -121,7 +127,7 @@ const ReportsPage = () => {
   };
   
   // Print report
-  const printReport = () => {
+  const printReport = (includeDetails = false) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow popups to print reports');
@@ -146,13 +152,16 @@ const ReportsPage = () => {
           .filters { margin-bottom: 20px; }
           .type-entry { color: green; }
           .type-output { color: orangered; }
+          .fifo-details { margin-left: 20px; margin-bottom: 15px; }
+          .fifo-details-table { margin-left: 20px; width: 95%; font-size: 0.9em; }
+          .fifo-details-header { font-weight: bold; margin-left: 20px; margin-top: 5px; color: #666; }
           @media print {
             button { display: none; }
           }
         </style>
       </head>
       <body>
-        <h1>Inventory Transactions Report</h1>
+        <h1>Inventory Transactions Report ${includeDetails ? '(Advanced)' : ''}</h1>
         
         <div class="filters">
           <p><strong>Filters:</strong> 
@@ -190,32 +199,82 @@ const ReportsPage = () => {
             </tr>
           </thead>
           <tbody>
-            ${filteredTransactions.map(transaction => {
-              const product = products.find(p => p.id === transaction.product_id);
-              // Get price and total based on transaction type
-              let unitPrice = 0;
-              let totalPrice = 0;
-              
-              if (transaction.type === 'entry') {
-                unitPrice = transaction.unit_price || 0;
-                totalPrice = unitPrice * transaction.quantity;
-              } else if (transaction.type === 'output') {
-                totalPrice = transaction.total_cost || 0;
-                unitPrice = transaction.quantity > 0 ? totalPrice / transaction.quantity : 0;
-              }
-              
-              return `
-                <tr>
-                  <td>${formatDate(new Date(transaction.date))}</td>
-                  <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
-                  <td>${product?.name || 'Unknown Product'}</td>
-                  <td>${transaction.quantity}</td>
-                  <td>${formatCurrency(unitPrice)}</td>
-                  <td>${formatCurrency(totalPrice)}</td>
-                  <td>${transaction.notes || '-'}</td>
-                </tr>
-              `;
-            }).join('')}
+    `;
+    
+    // Add transaction rows with FIFO details if requested
+    for (const transaction of filteredTransactions) {
+      const product = products.find(p => p.id === transaction.product_id);
+      
+      // Get price and total based on transaction type
+      let unitPrice = 0;
+      let totalPrice = 0;
+      
+      if (transaction.type === 'entry') {
+        unitPrice = transaction.unit_price || 0;
+        totalPrice = unitPrice * transaction.quantity;
+      } else if (transaction.type === 'output') {
+        totalPrice = transaction.total_cost || 0;
+        unitPrice = transaction.quantity > 0 ? totalPrice / transaction.quantity : 0;
+      }
+      
+      printContent += `
+        <tr>
+          <td>${formatDate(new Date(transaction.date))}</td>
+          <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
+          <td>${product?.name || 'Unknown Product'}</td>
+          <td>${transaction.quantity}</td>
+          <td>${formatCurrency(unitPrice)}</td>
+          <td>${formatCurrency(totalPrice)}</td>
+          <td>${transaction.notes || '-'}</td>
+        </tr>
+      `;
+      
+      // Add FIFO allocation details for outputs if advanced printing is selected
+      if (includeDetails && transaction.type === 'output') {
+        const details = expandedRowDetails[transaction.id];
+        
+        // If details are already loaded, include them
+        if (details && details.length > 0) {
+          printContent += `
+            <tr>
+              <td colspan="7">
+                <div class="fifo-details-header">FIFO Allocation Details:</div>
+                <table class="fifo-details-table">
+                  <thead>
+                    <tr>
+                      <th>Entry Date</th>
+                      <th>Notes</th>
+                      <th>Quantity</th>
+                      <th>Unit Cost</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+          `;
+          
+          for (const line of details) {
+            printContent += `
+              <tr>
+                <td>${line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}</td>
+                <td>${line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}</td>
+                <td>${line.quantity}</td>
+                <td>${formatCurrency(line.unit_price)}</td>
+                <td>${formatCurrency(line.quantity * line.unit_price)}</td>
+              </tr>
+            `;
+          }
+          
+          printContent += `
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          `;
+        }
+      }
+    }
+    
+    printContent += `
           </tbody>
         </table>
         
@@ -240,6 +299,35 @@ const ReportsPage = () => {
       }, 500);
     };
   };
+  
+  // Preload all FIFO details for advanced printing
+  const prepareAdvancedPrinting = async () => {
+    // Find all output transactions
+    const outputTransactions = filteredTransactions.filter(t => t.type === 'output');
+    
+    // For each output transaction, ensure we have FIFO details
+    for (const transaction of outputTransactions) {
+      // Only fetch if we don't already have details
+      if (!expandedRowDetails[transaction.id]) {
+        setLoadingDetails(prev => ({ ...prev, [transaction.id]: true }));
+        
+        try {
+          const details = await getTransactionFifoDetails(transaction.id);
+          setExpandedRowDetails(prev => ({
+            ...prev,
+            [transaction.id]: details
+          }));
+        } catch (error) {
+          console.error('Error loading FIFO details:', error);
+        } finally {
+          setLoadingDetails(prev => ({ ...prev, [transaction.id]: false }));
+        }
+      }
+    }
+    
+    // Once all details are loaded, print the report
+    printReport(true);
+  };
 
   if (loading) {
     return (
@@ -262,10 +350,24 @@ const ReportsPage = () => {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <h1 className="text-3xl font-bold tracking-tight">Transaction Reports</h1>
-            <Button onClick={printReport} className="flex items-center gap-2">
-              <Printer className="h-4 w-4" />
-              Print Report
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Printer className="h-4 w-4" />
+                  Print Report
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => printReport(false)}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  <span>Standard Print</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={prepareAdvancedPrinting}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>Advanced Print (with FIFO Details)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           {/* Stats cards */}

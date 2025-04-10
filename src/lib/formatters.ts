@@ -25,3 +25,7 @@ export function formatDateTime(date: Date): string {
     minute: '2-digit',
   }).format(date);
 }
+
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US').format(value);
+}
