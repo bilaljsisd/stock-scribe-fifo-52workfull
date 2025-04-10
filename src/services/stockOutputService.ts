@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { StockOutput } from "@/types/supabase";
 import { toast } from "sonner";
@@ -427,7 +428,7 @@ async function updateProductStock(productId: string): Promise<void> {
   }
 }
 
-// Add this new function to fetch stock output lines with related entry data
+// Updated function to fetch stock output lines with related entry data
 export async function getStockOutputLines(stockOutputId: string): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -442,7 +443,8 @@ export async function getStockOutputLines(stockOutputId: string): Promise<any[]>
           id,
           entry_date,
           supplier,
-          invoice_number
+          invoice_number,
+          notes
         )
       `)
       .eq('stock_output_id', stockOutputId)
