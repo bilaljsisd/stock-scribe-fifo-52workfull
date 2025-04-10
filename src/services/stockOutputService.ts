@@ -417,7 +417,7 @@ async function updateProductStock(productId: string): Promise<void> {
   try {
     // Call the Supabase RPC function to update product stock and cost
     const { error } = await supabase.rpc('update_product_stock_and_cost', {
-      product_id: productId
+      p_product_id: productId  // Changed from product_id to p_product_id to match the function parameter
     });
     
     if (error) throw error;

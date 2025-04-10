@@ -53,30 +53,36 @@ export type Database = {
           created_at: string
           entry_date: string
           id: string
+          invoice_number: string | null
           notes: string | null
           product_id: string
           quantity: number
           remaining_quantity: number
+          supplier: string | null
           unit_price: number
         }
         Insert: {
           created_at?: string
           entry_date?: string
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           product_id: string
           quantity: number
           remaining_quantity: number
+          supplier?: string | null
           unit_price: number
         }
         Update: {
           created_at?: string
           entry_date?: string
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           product_id?: string
           quantity?: number
           remaining_quantity?: number
+          supplier?: string | null
           unit_price?: number
         }
         Relationships: [
