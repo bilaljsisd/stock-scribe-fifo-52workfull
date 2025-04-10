@@ -15,7 +15,9 @@ export type Database = {
           created_at: string
           current_stock: number
           description: string | null
+          expiry_date: string | null
           id: string
+          is_expirable: boolean | null
           name: string
           sku: string
           updated_at: string
@@ -25,7 +27,9 @@ export type Database = {
           created_at?: string
           current_stock?: number
           description?: string | null
+          expiry_date?: string | null
           id?: string
+          is_expirable?: boolean | null
           name: string
           sku: string
           updated_at?: string
@@ -35,7 +39,9 @@ export type Database = {
           created_at?: string
           current_stock?: number
           description?: string | null
+          expiry_date?: string | null
           id?: string
+          is_expirable?: boolean | null
           name?: string
           sku?: string
           updated_at?: string
@@ -213,7 +219,7 @@ export type Database = {
     }
     Functions: {
       update_product_stock_and_cost: {
-        Args: { product_id: string }
+        Args: { p_product_id: string }
         Returns: undefined
       }
     }
