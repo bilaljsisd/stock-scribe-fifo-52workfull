@@ -168,7 +168,7 @@ const ProductDetailPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">Current Stock</p>
-                      <h3 className="text-2xl font-bold">{product.current_stock}</h3>
+                      <h3 className="text-2xl font-bold">{product.current_stock} Unit : {product.units}</h3>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">Average Cost</p>
