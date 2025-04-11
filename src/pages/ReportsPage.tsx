@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,15 +46,19 @@ const ReportsPage = () => {
     loadData();
   }, []);
   
+  // Filter transactions based on selected filters
   const filteredTransactions = transactions.filter((transaction) => {
+    // Filter by product
     if (productFilter !== "all" && transaction.product_id !== productFilter) {
       return false;
     }
     
+    // Filter by type
     if (typeFilter !== "all" && transaction.type !== typeFilter) {
       return false;
     }
     
+    // Filter by date range
     if (dateRange?.from) {
       const fromDate = new Date(dateRange.from);
       const transactionDate = new Date(transaction.date);
@@ -78,20 +83,25 @@ const ReportsPage = () => {
     return dateB.getTime() - dateA.getTime();
   });
   
+  // Calculate totals
   const entriesCount = filteredTransactions.filter(t => t.type === 'entry').length;
   const outputsCount = filteredTransactions.filter(t => t.type === 'output').length;
   
+  // Toggle expanded row and fetch FIFO details if needed
   const toggleExpandRow = async (transaction: Transaction) => {
+    // Only stock withdrawals (outputs) can be expanded
     if (transaction.type !== 'output') return;
     
     const transactionId = transaction.id;
     const isCurrentlyExpanded = expandedRows[transactionId] || false;
     
+    // Update expanded state
     setExpandedRows(prev => ({
       ...prev,
       [transactionId]: !isCurrentlyExpanded
     }));
     
+    // If expanding and we don't have details yet, fetch them
     if (!isCurrentlyExpanded && !expandedRowDetails[transactionId]) {
       setLoadingDetails(prev => ({ ...prev, [transactionId]: true }));
       
@@ -109,12 +119,14 @@ const ReportsPage = () => {
     }
   };
   
+  // Clear all filters
   const clearFilters = () => {
     setProductFilter("all");
     setTypeFilter("all");
     setDateRange(undefined);
   };
   
+  // Print report
   const printReport = (includeDetails = false) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -122,6 +134,7 @@ const ReportsPage = () => {
       return;
     }
     
+    // Create printable content
     let printContent = `
       <html>
       <head>
@@ -188,9 +201,11 @@ const ReportsPage = () => {
           <tbody>
     `;
     
+    // Add transaction rows with FIFO details if requested
     for (const transaction of filteredTransactions) {
       const product = products.find(p => p.id === transaction.product_id);
       
+      // Get price and total based on transaction type
       let unitPrice = 0;
       let totalPrice = 0;
       
@@ -214,9 +229,11 @@ const ReportsPage = () => {
         </tr>
       `;
       
+      // Add FIFO allocation details for outputs if advanced printing is selected
       if (includeDetails && transaction.type === 'output') {
         const details = expandedRowDetails[transaction.id];
         
+        // If details are already loaded, include them
         if (details && details.length > 0) {
           printContent += `
             <tr>
@@ -273,18 +290,24 @@ const ReportsPage = () => {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
+    // Wait for content to load before printing
     printWindow.onload = function() {
       printWindow.focus();
+      // Automatically trigger print dialog
       setTimeout(() => {
         printWindow.print();
       }, 500);
     };
   };
   
-  const prepareAdvancedPrinting = (event?: React.MouseEvent) => {
+  // Preload all FIFO details for advanced printing
+  const prepareAdvancedPrinting = async () => {
+    // Find all output transactions
     const outputTransactions = filteredTransactions.filter(t => t.type === 'output');
     
+    // For each output transaction, ensure we have FIFO details
     for (const transaction of outputTransactions) {
+      // Only fetch if we don't already have details
       if (!expandedRowDetails[transaction.id]) {
         setLoadingDetails(prev => ({ ...prev, [transaction.id]: true }));
         
@@ -302,6 +325,7 @@ const ReportsPage = () => {
       }
     }
     
+    // Once all details are loaded, print the report
     printReport(true);
   };
 
@@ -334,7 +358,11 @@ const ReportsPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => prepareAdvancedPrinting(e)}>
+                <DropdownMenuItem onClick={() => printReport(false)}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  <span>Standard Print</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => prepareAdvancedPrinting()}>
                   <FileText className="h-4 w-4 mr-2" />
                   <span>Advanced Print (with FIFO Details)</span>
                 </DropdownMenuItem>
@@ -342,6 +370,7 @@ const ReportsPage = () => {
             </DropdownMenu>
           </div>
           
+          {/* Stats cards */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -494,6 +523,7 @@ const ReportsPage = () => {
                       {filteredTransactions.map((transaction) => {
                         const product = products.find(p => p.id === transaction.product_id);
                         
+                        // Calculate price information based on transaction type
                         let unitPrice = 0;
                         let totalPrice = 0;
                         
@@ -548,6 +578,7 @@ const ReportsPage = () => {
                               <TableCell>{transaction.notes || '-'}</TableCell>
                             </TableRow>
                             
+                            {/* FIFO Allocation Details for Expanded Output Rows */}
                             {isExpanded && (
                               <TableRow className="bg-muted/20 border-0">
                                 <TableCell colSpan={8} className="p-0">

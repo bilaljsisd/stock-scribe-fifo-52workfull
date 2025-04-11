@@ -37,9 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
           <div>
             <p className="text-muted-foreground">Stock</p>
-            <p className="font-medium">
-              {product.current_stock} {product.units ? product.units : 'units'}
-            </p>
+            <p className="font-medium">{product.current_stock} units</p>
           </div>
           <div>
             <p className="text-muted-foreground">Avg. Cost</p>
