@@ -193,6 +193,7 @@ const ReportsPage = () => {
               <th>Type</th>
               <th>Product</th>
               <th>Quantity</th>
+              <th>Units</th>
               <th>Price</th>
               <th>Total Value</th>
               <th>Notes</th>
@@ -221,8 +222,9 @@ const ReportsPage = () => {
         <tr>
           <td>${formatDate(new Date(transaction.date))}</td>
           <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
-          <td>${product?.name || 'Unknown Product'} </td>
+          <td>${product?.name || 'Unknown Product'}</td>
           <td>${transaction.quantity}</td>
+          <td>${product?.units || 'units'}</td>
           <td>${formatCurrency(unitPrice)}</td>
           <td>${formatCurrency(totalPrice)}</td>
           <td>${transaction.notes || '-'}</td>
@@ -300,7 +302,7 @@ const ReportsPage = () => {
     };
   };
   
-  // Preload all FIFO details for advanced printing (fixing the async issue)
+  // Preload all FIFO details for advanced printing
   const prepareAdvancedPrinting = () => {
     const outputTransactions = filteredTransactions.filter(t => t.type === 'output');
     
@@ -518,6 +520,7 @@ const ReportsPage = () => {
                         <TableHead>Type</TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Quantity</TableHead>
+                        <TableHead>Units</TableHead>
                         <TableHead>Unit Price</TableHead>
                         <TableHead>Total Value</TableHead>
                         <TableHead>Notes</TableHead>
@@ -577,6 +580,7 @@ const ReportsPage = () => {
                               </TableCell>
                               <TableCell>{product?.name || 'Unknown Product'}</TableCell>
                               <TableCell>{transaction.quantity}</TableCell>
+                              <TableCell>{product?.units ? `units: ${product.units}` : 'units'}</TableCell>
                               <TableCell>{formatCurrency(unitPrice)}</TableCell>
                               <TableCell className="font-medium">{formatCurrency(totalPrice)}</TableCell>
                               <TableCell>{transaction.notes || '-'}</TableCell>

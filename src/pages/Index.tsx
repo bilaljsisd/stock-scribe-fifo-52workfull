@@ -170,7 +170,7 @@ const Index = () => {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">
-                              {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} units
+                              {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} {product?.units || 'units'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {product?.name || 'Unknown Product'}
@@ -226,7 +226,7 @@ const Index = () => {
                         <div className={`text-sm font-medium ${
                           product.current_stock === 0 ? 'text-red-600' : 'text-amber-600'
                         }`}>
-                          {product.current_stock} units
+                          {product.current_stock} {product.units ? `units: ${product.units}` : 'units'}
                         </div>
                       </div>
                     ))}
