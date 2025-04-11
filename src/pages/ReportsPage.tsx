@@ -221,9 +221,9 @@ const ReportsPage = () => {
         <tr>
           <td>${formatDate(new Date(transaction.date))}</td>
           <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
-          <td>${product?.name || 'Unknown Product'} ${product.units}</td>
+          <td>${product?.name || 'Unknown Product'} </td>
           <td>${transaction.quantity}</td>
-          <td>${formatCurrency(unitPrice)} {product.units}</td>
+          <td>${formatCurrency(unitPrice)}</td>
           <td>${formatCurrency(totalPrice)}</td>
           <td>${transaction.notes || '-'}</td>
         </tr>
@@ -575,7 +575,7 @@ const ReportsPage = () => {
                                   {transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}
                                 </div>
                               </TableCell>
-                              <TableCell>{product?.name || 'Unknown Product'} {product.units}</TableCell>
+                              <TableCell>{product?.name || 'Unknown Product'}</TableCell>
                               <TableCell>{transaction.quantity}</TableCell>
                               <TableCell>{formatCurrency(unitPrice)}</TableCell>
                               <TableCell className="font-medium">{formatCurrency(totalPrice)}</TableCell>

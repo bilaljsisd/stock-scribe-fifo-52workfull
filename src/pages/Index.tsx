@@ -170,10 +170,10 @@ const Index = () => {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">
-                              {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} units / {product.units}
+                              {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} units
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {product?.name || 'Unknown Product'}{product.units}
+                              {product?.name || 'Unknown Product'}
                             </p>
                           </div>
                           <div className="text-sm text-right">
