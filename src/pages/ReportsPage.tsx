@@ -362,7 +362,7 @@ const ReportsPage = () => {
                   <Printer className="h-4 w-4 mr-2" />
                   <span>Standard Print</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={prepareAdvancedPrinting}>
+                <DropdownMenuItem onClick={() => prepareAdvancedPrinting()}>
                   <FileText className="h-4 w-4 mr-2" />
                   <span>Advanced Print (with FIFO Details)</span>
                 </DropdownMenuItem>
