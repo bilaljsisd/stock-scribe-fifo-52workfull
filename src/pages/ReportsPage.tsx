@@ -300,33 +300,37 @@ const ReportsPage = () => {
     };
   };
   
-  // Preload all FIFO details for advanced printing
-  const prepareAdvancedPrinting = async () => {
-    // Find all output transactions
+  // Preload all FIFO details for advanced printing (fixing the async issue)
+  const prepareAdvancedPrinting = () => {
     const outputTransactions = filteredTransactions.filter(t => t.type === 'output');
     
-    // For each output transaction, ensure we have FIFO details
-    for (const transaction of outputTransactions) {
-      // Only fetch if we don't already have details
-      if (!expandedRowDetails[transaction.id]) {
-        setLoadingDetails(prev => ({ ...prev, [transaction.id]: true }));
-        
-        try {
-          const details = await getTransactionFifoDetails(transaction.id);
-          setExpandedRowDetails(prev => ({
-            ...prev,
-            [transaction.id]: details
-          }));
-        } catch (error) {
-          console.error('Error loading FIFO details:', error);
-        } finally {
-          setLoadingDetails(prev => ({ ...prev, [transaction.id]: false }));
+    const loadAllDetails = async () => {
+      // For each output transaction, ensure we have FIFO details
+      for (const transaction of outputTransactions) {
+        // Only fetch if we don't already have details
+        if (!expandedRowDetails[transaction.id]) {
+          setLoadingDetails(prev => ({ ...prev, [transaction.id]: true }));
+          
+          try {
+            const details = await getTransactionFifoDetails(transaction.id);
+            setExpandedRowDetails(prev => ({
+              ...prev,
+              [transaction.id]: details
+            }));
+          } catch (error) {
+            console.error('Error loading FIFO details:', error);
+          } finally {
+            setLoadingDetails(prev => ({ ...prev, [transaction.id]: false }));
+          }
         }
       }
-    }
+      
+      // Once all details are loaded, print the report
+      printReport(true);
+    };
     
-    // Once all details are loaded, print the report
-    printReport(true);
+    // Call the async function
+    loadAllDetails();
   };
 
   if (loading) {
@@ -476,7 +480,7 @@ const ReportsPage = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={printReport}
+                    onClick={() => printReport()}
                     className="md:hidden flex items-center gap-2"
                   >
                     <Printer className="h-4 w-4" />
