@@ -618,7 +618,7 @@ const ReportsPage = () => {
                                                   {line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}
                                                 </TableCell>
                                                 <TableCell className="py-1.5">{line.quantity}</TableCell>
-                                                <TableCell className="py-1.5">{formatCurrency(line.unit_price)}</TableCell>
+                                                <TableCell className="py-1.5">{formatCurrency(line.unit_price)} / {(line.product.units)}</TableCell>
                                                 <TableCell className="py-1.5">{formatCurrency(line.quantity * line.unit_price)}</TableCell>
                                               </TableRow>
                                             ))}
