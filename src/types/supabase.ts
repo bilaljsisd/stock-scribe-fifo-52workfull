@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   sku: string;
   description: string | null;
+  units: string | null;
   current_stock: number;
   average_cost: number;
   created_at?: string;

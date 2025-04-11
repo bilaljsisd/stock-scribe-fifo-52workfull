@@ -14,6 +14,7 @@ const productSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   sku: z.string().min(2, { message: "SKU must be at least 2 characters." }),
   description: z.string().optional(),
+  units: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -32,6 +33,7 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
       name: initialData?.name || "",
       sku: initialData?.sku || "",
       description: initialData?.description || "",
+      units: initialData?.units || "",
     },
   });
 
@@ -49,6 +51,7 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
           name: data.name,
           sku: data.sku,
           description: data.description || "",
+          units: data.units || "",
         });
         form.reset();
       }
@@ -91,6 +94,23 @@ export function ProductForm({ initialData, onSuccess }: ProductFormProps) {
               </FormControl>
               <FormDescription>
                 Stock Keeping Unit - a unique identifier for your product
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="units"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Units</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. kg, pcs, liters" {...field} />
+              </FormControl>
+              <FormDescription>
+                The unit of measurement for this product (optional)
               </FormDescription>
               <FormMessage />
             </FormItem>

@@ -4,6 +4,7 @@ export interface Product {
   name: string;
   sku: string;
   description: string;
+  units?: string;
   currentStock: number;
   averageCost: number;
   createdAt: Date;

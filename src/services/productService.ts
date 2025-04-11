@@ -44,6 +44,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'current_stock
         name: product.name,
         sku: product.sku,
         description: product.description || null,
+        units: product.units || null,
         current_stock: 0,
         average_cost: 0
       })
@@ -68,6 +69,7 @@ export async function updateProduct(product: Partial<Product> & { id: string }):
         name: product.name,
         sku: product.sku,
         description: product.description,
+        units: product.units,
         updated_at: new Date().toISOString()
       })
       .eq('id', product.id)
