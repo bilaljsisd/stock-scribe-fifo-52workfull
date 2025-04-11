@@ -258,7 +258,7 @@ const ReportsPage = () => {
                 <td>${line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}</td>
                 <td>${line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}</td>
                 <td>${line.quantity}</td>
-                <td>${formatCurrency(line.unit_price)}/ {(line.product.units)}</td>
+                <td>${formatCurrency(line.unit_price)}</td>
                 <td>${formatCurrency(line.quantity * line.unit_price)}</td>
               </tr>
             `;
