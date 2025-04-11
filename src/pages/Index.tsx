@@ -173,7 +173,7 @@ const Index = () => {
                               {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} units / {product.units}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {product?.name || 'Unknown Product'}
+                              {product?.name || 'Unknown Product'}{product.units}
                             </p>
                           </div>
                           <div className="text-sm text-right">
