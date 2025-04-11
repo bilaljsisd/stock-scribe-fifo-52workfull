@@ -223,7 +223,7 @@ const ReportsPage = () => {
           <td class="type-${transaction.type}">${transaction.type === 'entry' ? 'Stock Entry' : 'Stock Withdrawal'}</td>
           <td>${product?.name || 'Unknown Product'}</td>
           <td>${transaction.quantity}</td>
-          <td>${formatCurrency(unitPrice)}</td>
+          <td>${formatCurrency(unitPrice)} {product.units}</td>
           <td>${formatCurrency(totalPrice)}</td>
           <td>${transaction.notes || '-'}</td>
         </tr>
