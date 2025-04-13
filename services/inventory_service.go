@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 // InventoryService manages all inventory operations
 type InventoryService struct {
-	ctx           runtime.Context
+	ctx           context.Context
 	products      map[string]models.Product
 	stockEntries  map[string]models.StockEntry
 	stockOutputs  map[string]models.StockOutput
@@ -34,7 +35,7 @@ func NewInventoryService() *InventoryService {
 }
 
 // SetContext sets the runtime context
-func (s *InventoryService) SetContext(ctx runtime.Context) {
+func (s *InventoryService) SetContext(ctx context.Context) {
 	s.ctx = ctx
 }
 
@@ -336,15 +337,15 @@ func (s *InventoryService) GetStockOutputLines(outputID string) []models.StockOu
 // GetTransactionsForProduct returns all transactions for a product
 func (s *InventoryService) GetTransactionsForProduct(productID string) []models.Transaction {
 	transactions := []models.Transaction{}
-	for _, t := range s.transactions {
-		if t.ProductID == productID {
-			transactions = append(transactions, t)
+	for _, transaction := range s.transactions {
+		if transaction.ProductID == productID {
+			transactions = append(transactions, transaction)
 		}
 	}
 
 	// Sort by date (newest first)
 	sort.Slice(transactions, func(i, j int) bool {
-		return t.Date.After(j.Date)
+		return transactions[i].Date.After(transactions[j].Date)
 	})
 
 	return transactions

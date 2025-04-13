@@ -1,261 +1,203 @@
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StockEntryList } from '@/components/inventory/StockEntryList';
+import { StockOutputList } from '@/components/inventory/StockOutputList';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
-import { useState, useEffect } from "react";
-import { Header } from "@/components/layout/Header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, Plus, Minus, Edit, History, Truck } from "lucide-react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { formatCurrency } from "@/lib/formatters";
-import { ProductForm } from "@/components/products/ProductForm";
-import { StockEntryForm } from "@/components/inventory/StockEntryForm";
-import { StockOutputForm } from "@/components/inventory/StockOutputForm";
-import { StockEntryList } from "@/components/inventory/StockEntryList";
-import { StockOutputList } from "@/components/inventory/StockOutputList";
-import { getProductById, deleteProduct } from "@/services/productService";
-import { Product } from "@/types/supabase";
-import { toast } from "sonner";
+import { getProductById, deleteProduct } from '@/services/productService';
+import { getStockEntriesForProduct } from '@/services/stockEntryService';
+import { getStockOutputsForProduct } from '@/services/stockOutputService';
+import { getTransactionsForProduct } from '@/services/transactionService';
+import { formatCurrency, formatQuantity } from '@/lib/formatters';
 
 const ProductDetailPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  useEffect(() => {
-    async function loadProduct() {
-      if (!productId) return;
-      
-      setLoading(true);
-      const data = await getProductById(productId);
-      setProduct(data);
-      setLoading(false);
-    }
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch product details
+  const { data: product, isLoading, error } = useQuery({
+    queryKey: ['product', productId],
+    queryFn: () => productId ? getProductById(productId) : null,
+    enabled: !!productId
+  });
+
+  // Fetch stock entries
+  const { data: stockEntries } = useQuery({
+    queryKey: ['stockEntries', productId],
+    queryFn: () => productId ? getStockEntriesForProduct(productId) : [],
+    enabled: !!productId
+  });
+
+  // Fetch stock outputs
+  const { data: stockOutputs } = useQuery({
+    queryKey: ['stockOutputs', productId],
+    queryFn: () => productId ? getStockOutputsForProduct(productId) : [],
+    enabled: !!productId
+  });
+
+  // Fetch transactions
+  const { data: transactions } = useQuery({
+    queryKey: ['transactions', productId],
+    queryFn: () => productId ? getTransactionsForProduct(productId) : [],
+    enabled: !!productId
+  });
+
+  const handleDelete = async () => {
+    if (!productId) return;
     
-    loadProduct();
-  }, [productId, refreshKey]);
-  
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-  
-  const handleDeleteProduct = async () => {
-    if (!product) return;
-    
-    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
-      try {
-        const success = await deleteProduct(product.id, product.name);
-        if (success) {
-          navigate("/products");
-        }
-      } catch (error) {
-        toast.error("Failed to delete product");
+    setIsDeleting(true);
+    try {
+      await deleteProduct(productId);
+      toast.success('Product deleted successfully');
+      navigate('/products');
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to delete product');
       }
+    } finally {
+      setIsDeleting(false);
     }
   };
-  
-  const handleEditSuccess = () => {
-    setIsEditing(false);
-    handleRefresh();
-  };
-  
-  if (loading) {
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto py-6">
-          <div className="flex justify-center py-12">
-            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-  
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto py-6">
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Package className="h-16 w-16 text-gray-300 mb-4" />
-            <h2 className="text-xl font-medium">Product not found</h2>
-            <p className="text-muted-foreground mt-1">
-              The product you're looking for doesn't exist or has been removed
-            </p>
-            <Button asChild className="mt-4">
-              <Link to="/products">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Products
-              </Link>
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto py-6">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/products">
-                  <ArrowLeft className="h-4 w-4 mr-2" /> Back to Products
-                </Link>
-              </Button>
-            </div>
-            
-            {!isEditing && (
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" /> Edit Product
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={handleDeleteProduct}
-                >
-                  Delete
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          {isEditing ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Edit Product</CardTitle>
-                <CardDescription>
-                  Update the details for {product.name}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProductForm 
-                  initialData={product} 
-                  onSuccess={handleEditSuccess} 
-                />
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setIsEditing(false)} 
-                  className="mt-4"
-                >
-                  Cancel
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Product details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">{product.name}</CardTitle>
-                  <CardDescription>
-                    SKU: {product.sku}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Current Stock</p>
-                      <h3 className="text-2xl font-bold">{product.current_stock}  {product.units}</h3>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Average Cost</p>
-                      <h3 className="text-2xl font-bold">{formatCurrency(product.average_cost)}</h3>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                      <h3 className="text-2xl font-bold">{formatCurrency(product.current_stock * product.average_cost)}</h3>
-                    </div>
-                  </div>
-                  
-                  {product.description && (
-                    <div className="mt-6">
-                      <h4 className="font-medium mb-1">Description</h4>
-                      <p className="text-muted-foreground">{product.description}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              {/* Tabs for different actions */}
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3">
-                  <TabsTrigger value="overview" className="flex items-center">
-                    <Package className="h-4 w-4 mr-2" /> Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="add-stock" className="flex items-center">
-                    <Plus className="h-4 w-4 mr-2" /> Add Stock
-                  </TabsTrigger>
-                  <TabsTrigger value="remove-stock" className="flex items-center">
-                    <Minus className="h-4 w-4 mr-2" /> Remove Stock
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="overview" className="space-y-6">
-                  <StockEntryList product={product} />
-                  <StockOutputList product={product} />
-                </TabsContent>
-                
-                <TabsContent value="add-stock">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Truck className="h-5 w-5" /> Add Inventory
-                      </CardTitle>
-                      <CardDescription>
-                        Add new inventory stock for this product
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <StockEntryForm 
-                        product={product} 
-                        onSuccess={() => {
-                          setActiveTab("overview");
-                          handleRefresh();
-                        }} 
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="remove-stock">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <History className="h-5 w-5" /> Stock Withdrawal (FIFO)
-                      </CardTitle>
-                      <CardDescription>
-                        Remove inventory using the First-In, First-Out (FIFO) method
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <StockOutputForm 
-                        product={product} 
-                        onSuccess={() => {
-                          setActiveTab("overview");
-                          handleRefresh();
-                        }} 
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
+      <div className="container py-6">
+        <div className="flex items-center space-x-4 mb-6">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Skeleton className="h-8 w-40" />
         </div>
-      </main>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-full max-w-sm" />
+            <Skeleton className="h-4 w-full max-w-xs" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="container py-6">
+        <div className="flex items-center space-x-4 mb-6">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Error</h1>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Failed to load product</CardTitle>
+            <CardDescription>
+              The product you're looking for might not exist or an error occurred.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => navigate('/products')}>Go to Products</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container py-6">
+      <div className="flex items-center space-x-4 mb-6">
+        <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-bold">{product.name}</h1>
+        <div className="ml-auto flex space-x-2">
+          <Button variant="ghost" onClick={() => navigate(`/products/${productId}/edit`)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isDeleting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the product and all related data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction disabled={isDeleting} onClick={handleDelete}>
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{product.name}</CardTitle>
+          <CardDescription>
+            {product.description || 'No description provided.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium leading-none">SKU</p>
+              <p>{product.sku}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium leading-none">Units</p>
+              <p>{product.units || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium leading-none">Current Stock</p>
+              <p>{formatQuantity(product.current_stock)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium leading-none">Average Cost</p>
+              <p>{formatCurrency(product.average_cost)}</p>
+            </div>
+          </div>
+          <Separator />
+          <Tabs defaultValue="stock-entries" className="w-full">
+            <TabsList>
+              <TabsTrigger value="stock-entries">Stock Entries</TabsTrigger>
+              <TabsTrigger value="stock-outputs">Stock Outputs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="stock-entries" className="mt-4">
+              <StockEntryList productId={productId} stockEntries={stockEntries || []} />
+            </TabsContent>
+            <TabsContent value="stock-outputs" className="mt-4">
+              <StockOutputList productId={productId} stockOutputs={stockOutputs || []} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

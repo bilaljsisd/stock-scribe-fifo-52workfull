@@ -37,6 +37,7 @@ export interface StockOutputLine {
   stock_entry_id: string;
   quantity: number;
   unit_price: number;
+  stock_entry?: StockEntry; // Adding optional stock_entry field for UI components
 }
 
 export type TransactionType = 'entry' | 'output';
