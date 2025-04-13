@@ -1,17 +1,15 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { StockEntry } from "@/types/supabase";
+import { StockEntry } from "@/types/inventory";
 import { toast } from "sonner";
+import {
+  getStockEntriesForProduct as wailsGetStockEntriesForProduct,
+  addStockEntry as wailsAddStockEntry,
+  updateStockEntry as wailsUpdateStockEntry
+} from "./wailsService";
 
 export async function getStockEntriesForProduct(productId: string): Promise<StockEntry[]> {
   try {
-    const { data, error } = await supabase
-      .from('stock_entries')
-      .select('*')
-      .eq('product_id', productId)
-      .order('entry_date', { ascending: false });
-    
-    if (error) throw error;
+    const data = await wailsGetStockEntriesForProduct(productId);
     
     console.info("Stock Entries:", data);
     return data || [];
@@ -21,15 +19,9 @@ export async function getStockEntriesForProduct(productId: string): Promise<Stoc
   }
 }
 
-export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>): Promise<StockEntry | null> {
+export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'remainingQuantity'>): Promise<StockEntry | null> {
   try {
-    const { data, error } = await supabase
-      .from('stock_entries')
-      .insert(entry)
-      .select()
-      .single();
-    
-    if (error) throw error;
+    const data = await wailsAddStockEntry(entry);
     
     return data;
   } catch (error) {
@@ -40,17 +32,10 @@ export async function addStockEntry(entry: Omit<StockEntry, 'id' | 'created_at'>
 }
 
 export async function updateStockEntry(
-  entry: Pick<StockEntry, 'id'> & Partial<Omit<StockEntry, 'id' | 'created_at' | 'product_id' | 'remaining_quantity'>>
+  entry: Pick<StockEntry, 'id'> & Partial<Omit<StockEntry, 'id' | 'productId' | 'remainingQuantity'>>
 ): Promise<StockEntry | null> {
   try {
-    const { data, error } = await supabase
-      .from('stock_entries')
-      .update(entry)
-      .eq('id', entry.id)
-      .select()
-      .single();
-    
-    if (error) throw error;
+    const data = await wailsUpdateStockEntry(entry);
     
     return data;
   } catch (error) {
@@ -61,14 +46,10 @@ export async function updateStockEntry(
 
 export async function deleteStockEntry(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('stock_entries')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    return true;
+    // In our Go version, we don't have a direct delete method
+    // We would need to add this to the Go backend
+    toast.error("Delete operation not supported yet");
+    return false;
   } catch (error) {
     console.error('Error deleting stock entry:', error);
     throw error;

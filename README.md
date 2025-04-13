@@ -1,73 +1,57 @@
-# Welcome to your Lovable project
 
-## Project info
+# StockScribe FIFO - Desktop Edition
 
-**URL**: https://lovable.dev/projects/485d7a61-b410-47c3-80cd-5380e5152b2d
+A FIFO (First-In, First-Out) inventory management system built with Go and Wails.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Manage products with SKU, descriptions, and units
+- Add inventory stock with purchase dates and costs
+- Withdraw inventory using FIFO cost calculation method
+- View transaction history and stock levels
+- Generate reports on inventory valuation
 
-**Use Lovable**
+## Development
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/485d7a61-b410-47c3-80cd-5380e5152b2d) and start prompting.
+This project uses:
+- Go for backend logic
+- Wails for desktop app framework
+- React with TypeScript for the UI
+- Tailwind CSS and Shadcn UI for styling
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Go 1.21 or higher
+- Node.js 16 or higher
+- Wails CLI
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Install the Wails CLI:
+   ```
+   go install github.com/wailsapp/wails/v2/cmd/wails@latest
+   ```
 
-Follow these steps:
+2. Install dependencies:
+   ```
+   wails deps
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. Run the development server:
+   ```
+   wails dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Building
 
-# Step 3: Install the necessary dependencies.
-npm i
+To build the application for your platform:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+wails build
 ```
 
-**Edit a file directly in GitHub**
+This will create an executable in the `build/bin` directory.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## License
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/485d7a61-b410-47c3-80cd-5380e5152b2d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT

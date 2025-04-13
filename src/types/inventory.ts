@@ -1,4 +1,6 @@
 
+// This file contains TypeScript interfaces for our Go backend models
+
 export interface Product {
   id: string;
   name: string;
