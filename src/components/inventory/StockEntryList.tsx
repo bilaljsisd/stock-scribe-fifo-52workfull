@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Product, StockEntry } from "@/types/supabase";
+import { Product, StockEntry } from "@/types/models";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
@@ -81,9 +81,9 @@ export function StockEntryList({ product }: StockEntryListProps) {
           <tbody>
             <tr>
               <td>${entry.quantity}</td>
-              <td>${entry.remaining_quantity}</td>
+              <td>${entry.remaining_quantity !== undefined ? entry.remaining_quantity : entry.quantity}</td>
               <td>${formatCurrency(entry.unit_price)}</td>
-              <td>${formatCurrency(entry.remaining_quantity * entry.unit_price)}</td>
+              <td>${formatCurrency((entry.remaining_quantity !== undefined ? entry.remaining_quantity : entry.quantity) * entry.unit_price)}</td>
             </tr>
           </tbody>
         </table>
@@ -184,39 +184,49 @@ export function StockEntryList({ product }: StockEntryListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {stockEntries.map((entry) => (
-              <TableRow key={entry.id} className={entry.remaining_quantity === 0 ? "bg-muted/50" : ""}>
-                <TableCell>{formatDate(new Date(entry.entry_date))}</TableCell>
-                <TableCell>{entry.quantity}</TableCell>
-                <TableCell>
-                  <span className={entry.remaining_quantity === 0 ? "text-muted-foreground" : ""}>
-                    {entry.remaining_quantity}
-                  </span>
-                </TableCell>
-                <TableCell>{formatCurrency(entry.unit_price)}</TableCell>
-                <TableCell>{formatCurrency(entry.remaining_quantity * entry.unit_price)}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handlePrint(entry)}
-                      title="Print"
-                    >
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleUpdate(entry)}
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {stockEntries.map((entry) => {
+              // Make sure remaining_quantity has a valid value
+              const remainingQty = entry.remaining_quantity !== undefined 
+                ? entry.remaining_quantity 
+                : entry.quantity;
+              
+              // Calculate total value safely
+              const totalValue = remainingQty * entry.unit_price;
+              
+              return (
+                <TableRow key={entry.id} className={remainingQty === 0 ? "bg-muted/50" : ""}>
+                  <TableCell>{formatDate(new Date(entry.entry_date))}</TableCell>
+                  <TableCell>{entry.quantity}</TableCell>
+                  <TableCell>
+                    <span className={remainingQty === 0 ? "text-muted-foreground" : ""}>
+                      {remainingQty}
+                    </span>
+                  </TableCell>
+                  <TableCell>{formatCurrency(entry.unit_price)}</TableCell>
+                  <TableCell>{formatCurrency(totalValue)}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handlePrint(entry)}
+                        title="Print"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleUpdate(entry)}
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
         

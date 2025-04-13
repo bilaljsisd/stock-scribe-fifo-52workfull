@@ -30,6 +30,9 @@ export function ViewStockOutputDetailsDialog({
   useEffect(() => {
     if (open && stockOutput) {
       loadOutputLines();
+    } else {
+      // Reset lines when dialog closes
+      setLines([]);
     }
   }, [open, stockOutput]);
   
@@ -38,8 +41,9 @@ export function ViewStockOutputDetailsDialog({
     if (stockOutput) {
       try {
         // Fetch FIFO details
-        const transaction = await getTransactionFifoDetails(stockOutput.id);
-        setLines(transaction as EnrichedStockOutputLine[]);
+        const outputLines = await getTransactionFifoDetails(stockOutput.id);
+        console.log("Output lines loaded:", outputLines);
+        setLines(outputLines as EnrichedStockOutputLine[]);
       } catch (error) {
         console.error("Error loading output lines:", error);
         setLines([]);
@@ -86,6 +90,9 @@ export function ViewStockOutputDetailsDialog({
         ) : lines.length === 0 ? (
           <div className="text-center py-6">
             <p>No detailed records found for this withdrawal</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              This may happen if the output was created before FIFO tracking was implemented.
+            </p>
           </div>
         ) : (
           <div className="border rounded-md">

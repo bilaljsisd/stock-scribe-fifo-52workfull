@@ -52,6 +52,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
         unit_price: data.unitPrice,
         entry_date: data.entryDate.toISOString(),
         notes: data.notes || null,
+        remaining_quantity: data.quantity, // Add the remaining_quantity field with the same value as quantity
       });
       
       toast.success("Stock entry added successfully");

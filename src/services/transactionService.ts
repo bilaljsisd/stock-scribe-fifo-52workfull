@@ -1,94 +1,97 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Transaction, TransactionType, StockOutputLine } from '@/types/models';
+import { Transaction, StockEntry, StockOutputLine } from '@/types/models';
 import { getStoredData, saveStoredData, STORAGE_KEYS } from '@/lib/localStorageUtils';
+import { getStockOutputLines, getTransactionsForProduct } from './wailsService';
 
-export async function getAllTransactions(): Promise<Transaction[]> {
-  try {
-    // First try to get from Go backend via Wails
-    if (window.go && window.go["services.InventoryService"]?.GetAllTransactions) {
-      return await window.go["services.InventoryService"].GetAllTransactions();
-    } 
-    // Fallback to local storage
-    const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
-    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  } catch (error) {
-    console.error("Error getting transactions:", error);
-    return [];
-  }
-}
-
-export async function getTransactionsForProduct(productId: string): Promise<Transaction[]> {
-  try {
-    // First try to get from Go backend via Wails
-    if (window.go && window.go["services.InventoryService"]?.GetTransactionsForProduct) {
-      return await window.go["services.InventoryService"].GetTransactionsForProduct(productId);
-    }
-    // Fallback to local storage
-    const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
-    return transactions
-      .filter(t => t.product_id === productId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  } catch (error) {
-    console.error(`Error getting transactions for product ${productId}:`, error);
-    return [];
-  }
-}
-
+/**
+ * Creates a new transaction record
+ */
 export async function createTransaction(transactionData: Omit<Transaction, 'id'>): Promise<Transaction> {
-  try {
-    const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
-    
-    const newTransaction: Transaction = {
-      id: uuidv4(),
-      ...transactionData
-    };
-    
-    saveStoredData(STORAGE_KEYS.TRANSACTIONS, [...transactions, newTransaction]);
-    return newTransaction;
-  } catch (error) {
-    console.error("Error creating transaction:", error);
-    throw error;
-  }
+  const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
+  
+  const newTransaction: Transaction = {
+    id: uuidv4(),
+    ...transactionData
+  };
+  
+  const updatedTransactions = [...transactions, newTransaction];
+  saveStoredData(STORAGE_KEYS.TRANSACTIONS, updatedTransactions);
+  
+  return newTransaction;
 }
 
-export async function getTransactionFifoDetails(stockOutputId: string): Promise<StockOutputLine[]> {
+/**
+ * Gets transactions for a specific product
+ */
+export async function getProductTransactions(productId: string): Promise<Transaction[]> {
   try {
-    // First try to get from Go backend via Wails
-    if (window.go && window.go["services.InventoryService"]?.GetStockOutputLines) {
-      return await window.go["services.InventoryService"].GetStockOutputLines(stockOutputId);
+    // Try the Wails API first
+    const wailsTransactions = await getTransactionsForProduct(productId);
+    if (wailsTransactions && wailsTransactions.length > 0) {
+      return wailsTransactions as unknown as Transaction[];
     }
-    
-    // Fallback to local storage implementation
-    // Get the stock output lines for this transaction's reference_id
-    const outputLines = getStoredData<StockOutputLine>(STORAGE_KEYS.OUTPUT_LINES)
-      .filter(line => line.stock_output_id === stockOutputId);
-    
-    // Enrich with stock entry details
-    const stockEntries = getStoredData<any>(STORAGE_KEYS.STOCK_ENTRIES);
-    
-    return outputLines.map(line => {
-      const entry = stockEntries.find(e => e.id === line.stock_entry_id);
-      return {
-        ...line,
-        stock_entry: entry || null
-      };
-    });
   } catch (error) {
-    console.error(`Error getting FIFO details for output ${stockOutputId}:`, error);
-    return [];
+    console.log("Wails API not available or failed, using local storage", error);
+  }
+  
+  // Fallback to local storage
+  const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
+  return transactions
+    .filter(t => t.product_id === productId)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+/**
+ * Gets all transactions
+ */
+export async function getAllTransactions(): Promise<Transaction[]> {
+  const transactions = getStoredData<Transaction>(STORAGE_KEYS.TRANSACTIONS);
+  return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+/**
+ * Gets detailed FIFO breakdown for a stock output transaction
+ */
+export async function getTransactionFifoDetails(outputId: string): Promise<StockOutputLine[]> {
+  try {
+    // Try the Wails API first
+    const wailsOutputLines = await getStockOutputLines(outputId);
+    if (wailsOutputLines && wailsOutputLines.length > 0) {
+      return wailsOutputLines as unknown as StockOutputLine[];
+    }
+  } catch (error) {
+    console.log("Wails API not available or failed, using local storage", error);
+  }
+  
+  // Fallback to local storage
+  const outputLines = getStoredData<StockOutputLine>(STORAGE_KEYS.OUTPUT_LINES);
+  const matchingLines = outputLines.filter(line => line.stock_output_id === outputId);
+  
+  // Enrich with stock entry details
+  const stockEntries = getStoredData<StockEntry>(STORAGE_KEYS.STOCK_ENTRIES);
+  
+  return matchingLines.map(line => {
+    const entry = stockEntries.find(e => e.id === line.stock_entry_id);
+    return {
+      ...line,
+      stock_entry: entry
+    };
+  });
+}
+
+// Check if the window.go global is defined
+// We need a separate definition here that doesn't conflict with the one in wailsService.ts
+interface WindowGo {
+  go?: {
+    "services.InventoryService": {
+      GetTransactionsForProduct: (productId: string) => Promise<any[]>;
+      GetStockOutputLines: (outputId: string) => Promise<any[]>;
+      GetAllTransactions: () => Promise<any[]>;
+    };
   }
 }
 
-// Add a global typescript definition for the Go services
 declare global {
-  interface Window {
-    go?: {
-      "services.InventoryService": {
-        GetAllTransactions: () => Promise<Transaction[]>;
-        GetTransactionsForProduct: (productId: string) => Promise<Transaction[]>;
-        GetStockOutputLines: (outputId: string) => Promise<StockOutputLine[]>;
-      }
-    };
-  }
+  interface Window extends WindowGo {}
 }
