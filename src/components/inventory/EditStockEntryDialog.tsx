@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { StockEntry } from "@/types/supabase";
+import { StockEntry } from "@/types/models";
 import { updateStockEntry, deleteStockEntry } from "@/services/stockEntryService";
 import { toast } from "sonner";
 

@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { StockOutput } from "@/types/supabase";
-import { getStockOutputLines } from "@/services/stockOutputService";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StockOutput, StockOutputLine, StockEntry } from "@/types/models";
+import { getTransactionFifoDetails } from "@/services/transactionService";
 
 interface ViewStockOutputDetailsDialogProps {
   stockOutput: StockOutput | null;
@@ -14,19 +14,9 @@ interface ViewStockOutputDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface StockOutputLine {
-  id: string;
-  stock_output_id: string;
-  stock_entry_id: string;
-  quantity: number;
-  unit_price: number;
-  stock_entry: {
-    id: string;
-    entry_date: string;
-    supplier: string | null;
-    invoice_number: string | null;
-    notes: string | null;
-  };
+// Define a type for the enriched stock output line data
+interface EnrichedStockOutputLine extends StockOutputLine {
+  stock_entry?: StockEntry;
 }
 
 export function ViewStockOutputDetailsDialog({ 
@@ -34,7 +24,7 @@ export function ViewStockOutputDetailsDialog({
   open, 
   onOpenChange 
 }: ViewStockOutputDetailsDialogProps) {
-  const [lines, setLines] = useState<StockOutputLine[]>([]);
+  const [lines, setLines] = useState<EnrichedStockOutputLine[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -46,8 +36,14 @@ export function ViewStockOutputDetailsDialog({
   async function loadOutputLines() {
     setLoading(true);
     if (stockOutput) {
-      const outputLines = await getStockOutputLines(stockOutput.id);
-      setLines(outputLines);
+      try {
+        // Fetch FIFO details
+        const transaction = await getTransactionFifoDetails(stockOutput.id);
+        setLines(transaction as EnrichedStockOutputLine[]);
+      } catch (error) {
+        console.error("Error loading output lines:", error);
+        setLines([]);
+      }
     }
     setLoading(false);
   }
@@ -106,9 +102,11 @@ export function ViewStockOutputDetailsDialog({
               <TableBody>
                 {lines.map((line) => (
                   <TableRow key={line.id}>
-                    <TableCell>{line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}</TableCell>
                     <TableCell>
-                      {line.stock_entry && line.stock_entry.notes ? line.stock_entry.notes : "-"}
+                      {line.stock_entry ? formatDate(new Date(line.stock_entry.entry_date)) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {line.stock_entry?.notes || "-"}
                     </TableCell>
                     <TableCell>{line.quantity}</TableCell>
                     <TableCell>{formatCurrency(line.unit_price)}</TableCell>

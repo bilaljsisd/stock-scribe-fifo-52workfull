@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,8 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { StockOutput } from "@/types/supabase";
-import { updateStockOutput, deleteStockOutput, updateStockOutputQuantity } from "@/services/stockOutputService";
+import { StockOutput } from "@/types/models";
+import { updateStockOutput, deleteStockOutput } from "@/services/stockOutputService";
 import { toast } from "sonner";
 
 const stockOutputSchema = z.object({
@@ -48,30 +48,14 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
   async function onSubmit(data: z.infer<typeof stockOutputSchema>) {
     setIsSubmitting(true);
     try {
-      // If quantity changed, use special update function
-      if (data.quantity !== stockOutput.total_quantity) {
-        const result = await updateStockOutputQuantity(
-          stockOutput.id,
-          data.quantity,
-          data.outputDate.toISOString(),
-          data.referenceNumber || null,
-          data.notes || null
-        );
-        
-        if (!result) {
-          toast.error("Failed to update quantity. Please check available stock.");
-          setIsSubmitting(false);
-          return;
-        }
-      } else {
-        // If only other fields changed, use regular update
-        await updateStockOutput({
-          id: stockOutput.id,
-          output_date: data.outputDate.toISOString(),
-          reference_number: data.referenceNumber || null,
-          notes: data.notes || null,
-        });
-      }
+      // For now we'll just update the metadata, not quantity
+      // Changing quantity would require more complex FIFO recalculation
+      await updateStockOutput({
+        id: stockOutput.id,
+        output_date: data.outputDate.toISOString(),
+        reference_number: data.referenceNumber || null,
+        notes: data.notes || null,
+      });
       
       toast.success("Stock withdrawal updated successfully");
       onOpenChange(false);
@@ -122,6 +106,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
                     <Input 
                       type="number" 
                       min="1" 
+                      disabled={true} // Disabled for now as we don't support quantity updates
                       {...field}
                       onChange={(e) => {
                         const value = parseInt(e.target.value);
@@ -130,11 +115,9 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
                     />
                   </FormControl>
                   <FormMessage />
-                  {field.value !== stockOutput.total_quantity && (
-                    <p className="text-xs text-amber-500 mt-1">
-                      Changing quantity will recalculate costs using FIFO method
-                    </p>
-                  )}
+                  <p className="text-xs text-amber-500 mt-1">
+                    Quantity cannot be changed after creation
+                  </p>
                 </FormItem>
               )}
             />

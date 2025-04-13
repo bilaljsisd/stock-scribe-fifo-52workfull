@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +17,7 @@ import { getProductById, deleteProduct } from '@/services/productService';
 import { getStockEntriesForProduct } from '@/services/stockEntryService';
 import { getStockOutputsForProduct } from '@/services/stockOutputService';
 import { getTransactionsForProduct } from '@/services/transactionService';
-import { formatCurrency, formatQuantity } from '@/lib/formatters';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 
 const ProductDetailPage = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -176,7 +177,7 @@ const ProductDetailPage = () => {
             </div>
             <div>
               <p className="text-sm font-medium leading-none">Current Stock</p>
-              <p>{formatQuantity(product.current_stock)}</p>
+              <p>{formatNumber(product.current_stock)}</p>
             </div>
             <div>
               <p className="text-sm font-medium leading-none">Average Cost</p>
@@ -190,10 +191,10 @@ const ProductDetailPage = () => {
               <TabsTrigger value="stock-outputs">Stock Outputs</TabsTrigger>
             </TabsList>
             <TabsContent value="stock-entries" className="mt-4">
-              <StockEntryList productId={productId} stockEntries={stockEntries || []} />
+              <StockEntryList product={product} stockEntries={stockEntries || []} />
             </TabsContent>
             <TabsContent value="stock-outputs" className="mt-4">
-              <StockOutputList productId={productId} stockOutputs={stockOutputs || []} />
+              <StockOutputList product={product} stockOutputs={stockOutputs || []} />
             </TabsContent>
           </Tabs>
         </CardContent>

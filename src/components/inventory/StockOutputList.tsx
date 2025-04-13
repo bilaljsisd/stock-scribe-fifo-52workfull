@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Product, StockOutput } from "@/types/supabase";
+import { Product, StockOutput } from "@/types/models";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
@@ -12,17 +13,20 @@ import { ViewStockOutputDetailsDialog } from "./ViewStockOutputDetailsDialog";
 
 interface StockOutputListProps {
   product: Product;
+  stockOutputs?: StockOutput[];
 }
 
-export function StockOutputList({ product }: StockOutputListProps) {
-  const [stockOutputs, setStockOutputs] = useState<StockOutput[]>([]);
-  const [loading, setLoading] = useState(true);
+export function StockOutputList({ product, stockOutputs: initialStockOutputs }: StockOutputListProps) {
+  const [stockOutputs, setStockOutputs] = useState<StockOutput[]>(initialStockOutputs || []);
+  const [loading, setLoading] = useState(!initialStockOutputs);
   const [editingOutput, setEditingOutput] = useState<StockOutput | null>(null);
   const [viewingOutput, setViewingOutput] = useState<StockOutput | null>(null);
   
   useEffect(() => {
-    loadStockOutputs();
-  }, [product.id]);
+    if (!initialStockOutputs) {
+      loadStockOutputs();
+    }
+  }, [product.id, initialStockOutputs]);
   
   async function loadStockOutputs() {
     setLoading(true);

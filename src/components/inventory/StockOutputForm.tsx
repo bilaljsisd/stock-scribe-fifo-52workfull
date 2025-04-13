@@ -12,12 +12,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Product } from "@/types/supabase";
+import { Product } from "@/types/models";
 import { createStockOutput } from "@/services/stockOutputService";
 import { toast } from "sonner";
 
 const stockOutputSchema = z.object({
-  quantity: z.number().positive({ message: "Quantity must be greater than 0." }),
+  quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }),
   outputDate: z.date({ required_error: "Please select a date." }),
   referenceNumber: z.string().optional(),
   notes: z.string().optional(),
@@ -58,12 +58,18 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
         product.id,
         data.quantity,
         data.outputDate.toISOString(),
-        data.referenceNumber || undefined,
-        data.notes || undefined
+        data.referenceNumber || null,
+        data.notes || null
       );
       
       if (result) {
-        form.reset();
+        toast.success("Stock output created successfully");
+        form.reset({
+          quantity: undefined,
+          outputDate: new Date(),
+          referenceNumber: "",
+          notes: "",
+        });
         
         if (onSuccess) {
           onSuccess();
@@ -71,6 +77,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
       }
     } catch (error) {
       console.error(error);
+      toast.error("Failed to create stock output");
     } finally {
       setIsSubmitting(false);
     }
@@ -171,7 +178,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           )}
         />
         
-        <Button type="submit" disabled={isSubmitting} variant="default" className="bg-inventory-600 hover:bg-inventory-700">
+        <Button type="submit" disabled={isSubmitting} variant="default">
           {isSubmitting ? "Processing..." : "Withdraw Stock (FIFO)"}
         </Button>
       </form>

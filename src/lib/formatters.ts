@@ -29,3 +29,10 @@ export function formatDateTime(date: Date): string {
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
+
+export function formatQuantity(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(value);
+}

@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { Product, StockEntry } from "@/types/supabase";
+import { Product, StockEntry } from "@/types/models";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Edit, Package, Printer, Trash2 } from "lucide-react";
+import { Edit, Package, Printer } from "lucide-react";
 import { getStockEntriesForProduct } from "@/services/stockEntryService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -12,17 +12,20 @@ import { EditStockEntryDialog } from "./EditStockEntryDialog";
 
 interface StockEntryListProps {
   product: Product;
+  stockEntries?: StockEntry[];
 }
 
-export function StockEntryList({ product }: StockEntryListProps) {
-  const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+export function StockEntryList({ product, stockEntries: initialStockEntries }: StockEntryListProps) {
+  const [stockEntries, setStockEntries] = useState<StockEntry[]>(initialStockEntries || []);
+  const [loading, setLoading] = useState(!initialStockEntries);
   const [error, setError] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
 
   useEffect(() => {
-    loadStockEntries();
-  }, [product.id]);
+    if (!initialStockEntries) {
+      loadStockEntries();
+    }
+  }, [product.id, initialStockEntries]);
 
   async function loadStockEntries() {
     try {
