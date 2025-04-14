@@ -3,7 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
-
+import {BackupRestoreSettings} from "@/components/settings/BackupRestoreSettings";
 const SettingsPage = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -49,6 +49,7 @@ const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+          <BackupRestoreSettings />
         </div>
       </main>
     </div>

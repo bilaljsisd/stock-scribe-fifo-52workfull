@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for working with localStorage to persist application data
  */
@@ -66,6 +65,47 @@ export function deleteStoredItem<T extends { id: string }>(key: string, id: stri
 // Clear all data for a specific key
 export function clearStoredData(key: string): void {
   localStorage.removeItem(key);
+}
+
+// Export all localStorage data as a JSON file
+export function exportDataToFile() {
+  const dataToExport = {};
+  
+  Object.values(STORAGE_KEYS).forEach(key => {
+    const data = localStorage.getItem(key);
+    if (data) {
+      dataToExport[key] = JSON.parse(data);
+    }
+  });
+
+  const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `stockscribe_backup_${new Date().toISOString().replace(/:/g, '-')}.json`;
+  link.click();
+}
+
+// Import data from a JSON file
+export function importDataFromFile(file: File) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const importedData = JSON.parse(event.target?.result as string);
+      
+      Object.entries(importedData).forEach(([key, value]) => {
+        if (Object.values(STORAGE_KEYS).includes(key)) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+      });
+
+      // Optionally, trigger a page reload or app refresh
+      window.location.reload();
+    } catch (error) {
+      console.error('Error importing data:', error);
+      alert('Failed to import backup file. Please check the file format.');
+    }
+  };
+  reader.readAsText(file);
 }
 
 // Export the storage keys for use in services
