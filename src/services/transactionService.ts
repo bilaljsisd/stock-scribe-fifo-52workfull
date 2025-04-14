@@ -154,9 +154,9 @@ async function enrichTransactions(transactions: Transaction[]): Promise<Transact
 interface WindowGo {
   go?: {
     "services.InventoryService": {
-      GetTransactionsForProduct: (productId: string) => Promise<any[]>;
-      GetStockOutputLines: (outputId: string) => Promise<any[]>;
-      GetAllTransactions: () => Promise<any[]>;
+      GetTransactionsForProduct: (productId: string) => Promise<Transaction[]>;
+      GetStockOutputLines: (outputId: string) => Promise<StockOutputLine[]>;
+      GetAllTransactions: () => Promise<Transaction[]>;
     };
   }
 }

@@ -4,8 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { StockOutput, StockOutputLine, StockEntry } from "@/types/models";
+import { StockOutput, StockOutputLine } from "@/types/models";
 import { getTransactionFifoDetails } from "@/services/transactionService";
 
 interface ViewStockOutputDetailsDialogProps {
@@ -14,17 +13,12 @@ interface ViewStockOutputDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Define a type for the enriched stock output line data
-interface EnrichedStockOutputLine extends StockOutputLine {
-  stock_entry?: StockEntry;
-}
-
 export function ViewStockOutputDetailsDialog({ 
   stockOutput, 
   open, 
   onOpenChange 
 }: ViewStockOutputDetailsDialogProps) {
-  const [lines, setLines] = useState<EnrichedStockOutputLine[]>([]);
+  const [lines, setLines] = useState<StockOutputLine[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -43,7 +37,7 @@ export function ViewStockOutputDetailsDialog({
         // Fetch FIFO details
         const outputLines = await getTransactionFifoDetails(stockOutput.id);
         console.log("Output lines loaded:", outputLines);
-        setLines(outputLines as EnrichedStockOutputLine[]);
+        setLines(outputLines);
       } catch (error) {
         console.error("Error loading output lines:", error);
         setLines([]);
