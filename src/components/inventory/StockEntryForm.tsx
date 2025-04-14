@@ -12,8 +12,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Product } from "@/types/supabase";
+import { Product } from "@/types/models";
 import { addStockEntry } from "@/services/stockEntryService";
+import { toast } from "sonner";
 
 const stockEntrySchema = z.object({
   quantity: z.coerce.number().positive({ message: "Quantity must be greater than 0." }),
@@ -52,8 +53,9 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
         unit_price: data.unitPrice,
         entry_date: data.entryDate.toISOString(),
         notes: data.notes || null,
-        remaining_quantity: data.quantity, // Add the remaining_quantity field with the same value as quantity
       });
+      
+      toast.success(`Added ${data.quantity} units to inventory`);
       
       form.reset({
         quantity: 0,
@@ -66,7 +68,8 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
         onSuccess();
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error adding stock entry:", error);
+      toast.error("Failed to add inventory");
     } finally {
       setIsSubmitting(false);
     }

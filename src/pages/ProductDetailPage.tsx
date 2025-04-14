@@ -13,13 +13,14 @@ import { StockOutputForm } from "@/components/inventory/StockOutputForm";
 import { StockEntryList } from "@/components/inventory/StockEntryList";
 import { StockOutputList } from "@/components/inventory/StockOutputList";
 import { getProductById, deleteProduct } from "@/services/productService";
-import { Product } from "@/types/supabase";
+import { Product as SupabaseProduct } from "@/types/supabase"; 
+import { Product as ModelProduct } from "@/types/models";
 import { toast } from "sonner";
 
 const ProductDetailPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<SupabaseProduct | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,9 +31,15 @@ const ProductDetailPage = () => {
       if (!productId) return;
       
       setLoading(true);
-      const data = await getProductById(productId);
-      setProduct(data);
-      setLoading(false);
+      try {
+        const data = await getProductById(productId);
+        setProduct(data);
+      } catch (error) {
+        console.error("Failed to load product:", error);
+        toast.error("Failed to load product details");
+      } finally {
+        setLoading(false);
+      }
     }
     
     loadProduct();
@@ -47,10 +54,9 @@ const ProductDetailPage = () => {
     
     if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
       try {
-        const success = await deleteProduct(product.id, product.name);
-        if (success) {
-          navigate("/products");
-        }
+        await deleteProduct(product.id);
+        toast.success(`Product ${product.name} deleted successfully`);
+        navigate("/products");
       } catch (error) {
         toast.error("Failed to delete product");
       }
@@ -60,6 +66,21 @@ const ProductDetailPage = () => {
   const handleEditSuccess = () => {
     setIsEditing(false);
     handleRefresh();
+  };
+  
+  // Convert to models.Product for compatibility with components
+  const convertToModelProduct = (product: SupabaseProduct): ModelProduct => {
+    return {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      description: product.description,
+      units: product.units || "",
+      current_stock: product.current_stock,
+      average_cost: product.average_cost,
+      created_at: product.created_at || new Date().toISOString(),
+      updated_at: product.updated_at || new Date().toISOString()
+    };
   };
   
   if (loading) {
@@ -96,6 +117,8 @@ const ProductDetailPage = () => {
       </div>
     );
   }
+  
+  const modelProduct = convertToModelProduct(product);
   
   return (
     <div className="min-h-screen bg-background">
@@ -204,8 +227,8 @@ const ProductDetailPage = () => {
                 </TabsList>
                 
                 <TabsContent value="overview" className="space-y-6">
-                  <StockEntryList product={product} />
-                  <StockOutputList product={product} />
+                  <StockEntryList product={modelProduct} />
+                  <StockOutputList product={modelProduct} />
                 </TabsContent>
                 
                 <TabsContent value="add-stock">
@@ -220,7 +243,7 @@ const ProductDetailPage = () => {
                     </CardHeader>
                     <CardContent>
                       <StockEntryForm 
-                        product={product} 
+                        product={modelProduct} 
                         onSuccess={() => {
                           setActiveTab("overview");
                           handleRefresh();
@@ -242,7 +265,7 @@ const ProductDetailPage = () => {
                     </CardHeader>
                     <CardContent>
                       <StockOutputForm 
-                        product={product} 
+                        product={modelProduct} 
                         onSuccess={() => {
                           setActiveTab("overview");
                           handleRefresh();
