@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, Printer, ChevronDown, ChevronRight, Loader2, FileText } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Printer, ChevronDown, ChevronRight, Loader2, FileText, DollarSign } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -46,19 +45,15 @@ const ReportsPage = () => {
     loadData();
   }, []);
   
-  // Filter transactions based on selected filters
   const filteredTransactions = transactions.filter((transaction) => {
-    // Filter by product
     if (productFilter !== "all" && transaction.product_id !== productFilter) {
       return false;
     }
     
-    // Filter by type
     if (typeFilter !== "all" && transaction.type !== typeFilter) {
       return false;
     }
     
-    // Filter by date range
     if (dateRange?.from) {
       const fromDate = new Date(dateRange.from);
       const transactionDate = new Date(transaction.date);
@@ -83,25 +78,33 @@ const ReportsPage = () => {
     return dateB.getTime() - dateA.getTime();
   });
   
-  // Calculate totals
   const entriesCount = filteredTransactions.filter(t => t.type === 'entry').length;
   const outputsCount = filteredTransactions.filter(t => t.type === 'output').length;
   
-  // Toggle expanded row and fetch FIFO details if needed
+  const entriesTotal = filteredTransactions
+    .filter(t => t.type === 'entry')
+    .reduce((total, t) => {
+      const unitPrice = t.unit_price || 0;
+      return total + (unitPrice * t.quantity);
+    }, 0);
+    
+  const outputsTotal = filteredTransactions
+    .filter(t => t.type === 'output')
+    .reduce((total, t) => {
+      return total + (t.total_cost || 0);
+    }, 0);
+  
   const toggleExpandRow = async (transaction: Transaction) => {
-    // Only stock withdrawals (outputs) can be expanded
     if (transaction.type !== 'output') return;
     
     const transactionId = transaction.id;
     const isCurrentlyExpanded = expandedRows[transactionId] || false;
     
-    // Update expanded state
     setExpandedRows(prev => ({
       ...prev,
       [transactionId]: !isCurrentlyExpanded
     }));
     
-    // If expanding and we don't have details yet, fetch them
     if (!isCurrentlyExpanded && !expandedRowDetails[transactionId]) {
       setLoadingDetails(prev => ({ ...prev, [transactionId]: true }));
       
@@ -119,14 +122,12 @@ const ReportsPage = () => {
     }
   };
   
-  // Clear all filters
   const clearFilters = () => {
     setProductFilter("all");
     setTypeFilter("all");
     setDateRange(undefined);
   };
   
-  // Print report
   const printReport = (includeDetails = false) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -134,7 +135,6 @@ const ReportsPage = () => {
       return;
     }
     
-    // Create printable content
     let printContent = `
       <html>
       <head>
@@ -142,8 +142,8 @@ const ReportsPage = () => {
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           h1 { color: #333; }
-          .summary { display: flex; margin-bottom: 20px; }
-          .summary-card { border: 1px solid #ddd; padding: 15px; margin-right: 15px; border-radius: 5px; width: 200px; }
+          .summary { display: flex; margin-bottom: 20px; flex-wrap: wrap; }
+          .summary-card { border: 1px solid #ddd; padding: 15px; margin-right: 15px; margin-bottom: 15px; border-radius: 5px; width: 200px; }
           .summary-title { font-size: 14px; color: #666; margin-bottom: 5px; }
           .summary-value { font-size: 20px; font-weight: bold; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -184,6 +184,14 @@ const ReportsPage = () => {
             <div class="summary-title">Stock Withdrawals</div>
             <div class="summary-value">${outputsCount}</div>
           </div>
+          <div class="summary-card">
+            <div class="summary-title">Total Cost of Entries</div>
+            <div class="summary-value">${formatCurrency(entriesTotal)}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Total Cost of Withdrawals</div>
+            <div class="summary-value">${formatCurrency(outputsTotal)}</div>
+          </div>
         </div>
         
         <table>
@@ -202,11 +210,9 @@ const ReportsPage = () => {
           <tbody>
     `;
     
-    // Add transaction rows with FIFO details if requested
     for (const transaction of filteredTransactions) {
       const product = products.find(p => p.id === transaction.product_id);
       
-      // Get price and total based on transaction type
       let unitPrice = 0;
       let totalPrice = 0;
       
@@ -231,15 +237,13 @@ const ReportsPage = () => {
         </tr>
       `;
       
-      // Add FIFO allocation details for outputs if advanced printing is selected
       if (includeDetails && transaction.type === 'output') {
         const details = expandedRowDetails[transaction.id];
         
-        // If details are already loaded, include them
         if (details && details.length > 0) {
           printContent += `
             <tr>
-              <td colspan="7">
+              <td colspan="8">
                 <div class="fifo-details-header">FIFO Allocation Details:</div>
                 <table class="fifo-details-table">
                   <thead>
@@ -292,24 +296,19 @@ const ReportsPage = () => {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
-    // Wait for content to load before printing
     printWindow.onload = function() {
       printWindow.focus();
-      // Automatically trigger print dialog
       setTimeout(() => {
         printWindow.print();
       }, 500);
     };
   };
   
-  // Preload all FIFO details for advanced printing
   const prepareAdvancedPrinting = () => {
     const outputTransactions = filteredTransactions.filter(t => t.type === 'output');
     
     const loadAllDetails = async () => {
-      // For each output transaction, ensure we have FIFO details
       for (const transaction of outputTransactions) {
-        // Only fetch if we don't already have details
         if (!expandedRowDetails[transaction.id]) {
           setLoadingDetails(prev => ({ ...prev, [transaction.id]: true }));
           
@@ -327,11 +326,9 @@ const ReportsPage = () => {
         }
       }
       
-      // Once all details are loaded, print the report
       printReport(true);
     };
     
-    // Call the async function
     loadAllDetails();
   };
 
@@ -376,8 +373,7 @@ const ReportsPage = () => {
             </DropdownMenu>
           </div>
           
-          {/* Stats cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -422,6 +418,30 @@ const ReportsPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{outputsCount}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Cost of Entries
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(entriesTotal)}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Cost of Withdrawals
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(outputsTotal)}</div>
               </CardContent>
             </Card>
           </div>
@@ -530,7 +550,6 @@ const ReportsPage = () => {
                       {filteredTransactions.map((transaction) => {
                         const product = products.find(p => p.id === transaction.product_id);
                         
-                        // Calculate price information based on transaction type
                         let unitPrice = 0;
                         let totalPrice = 0;
                         
@@ -586,10 +605,9 @@ const ReportsPage = () => {
                               <TableCell>{transaction.notes || '-'}</TableCell>
                             </TableRow>
                             
-                            {/* FIFO Allocation Details for Expanded Output Rows */}
                             {isExpanded && (
                               <TableRow className="bg-muted/20 border-0">
-                                <TableCell colSpan={8} className="p-0">
+                                <TableCell colSpan={9} className="p-0">
                                   <div className="py-2 px-4">
                                     <div className="text-sm font-medium text-muted-foreground mb-2">FIFO Allocation Details</div>
                                     
