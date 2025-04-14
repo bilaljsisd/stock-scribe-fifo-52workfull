@@ -13,7 +13,7 @@ import (
 	"stock-scribe-fifo/services"
 )
 
-//go:embed frontend/dist
+//go:embed dist
 var assets embed.FS
 
 func main() {
