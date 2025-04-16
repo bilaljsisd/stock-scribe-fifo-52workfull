@@ -45,10 +45,10 @@ export function StockOutputList({ product, stockOutputs: initialStockOutputs }: 
     const printContent = `
       <html>
       <head>
-        <title>Stock Withdrawal Details</title>
+        <title>تفاصيل سحب المنتج</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #333; }
+          h1 {    color: #333;   display: flex;   justify-content: center;   align-items: center;   text-align: center;   flex-direction: column; } 
           .header { margin-bottom: 20px; }
           .detail { margin-bottom: 5px; }
           .label { font-weight: bold; color: #666; }
@@ -62,18 +62,18 @@ export function StockOutputList({ product, stockOutputs: initialStockOutputs }: 
       </head>
       <body>
         <div class="header">
-          <h1>Stock Withdrawal Details</h1>
-          <div class="detail"><span class="label">Date:</span> ${formatDate(new Date(output.output_date))}</div>
-          <div class="detail"><span class="label">Product:</span> ${product.name} (SKU: ${product.sku})</div>
-          <div class="detail"><span class="label">Reference Number:</span> ${output.reference_number || 'None'}</div>
+          <h1>تفاصيل سحب المنتج <br/> Bon des retraits produit</h1>
+          <div class="detail"><span class="label">Date/يوم :</span> ${formatDate(new Date(output.output_date))}</div>
+          <div class="detail"><span class="label">Produit/منتج :</span> ${product.name} (SKU: ${product.sku})</div>
+          <div class="detail"><span class="label">Reference Num/الرقم المرجعي :</span> ${output.reference_number || 'None'}</div>
         </div>
         
         <table>
           <thead>
             <tr>
-              <th>Quantity</th>
-              <th>Total Cost</th>
-              <th>Average Unit Cost</th>
+              <th>Quantité - الكمية</th>
+              <th>Valeur totale - سعر الكلي</th>
+              <th>Prix moyen - متوسط</th>
             </tr>
           </thead>
           <tbody>
@@ -86,11 +86,11 @@ export function StockOutputList({ product, stockOutputs: initialStockOutputs }: 
         </table>
         
         <div style="margin-top: 20px;">
-          <div class="detail"><span class="label">Notes:</span> ${output.notes || 'None'}</div>
+          <div class="detail"><span class="label">pour /  من أجل :  </span> ${output.notes || 'None'}</div>
         </div>
-        
+
         <div style="margin-top: 30px; text-align: center;">
-          <p>Report generated on ${formatDate(new Date())}</p>
+          <p>تم إنشاء التقرير في ${formatDate(new Date())}</p>
           <button onclick="window.print();" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 5px; cursor: pointer;">Print</button>
         </div>
       </body>
@@ -160,12 +160,12 @@ export function StockOutputList({ product, stockOutputs: initialStockOutputs }: 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead>Total Cost</TableHead>
-              <TableHead>Avg. Unit Cost</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Date - يوم</TableHead>
+              <TableHead>Quantité - الكمية</TableHead>
+              <TableHead>Reference - رقم</TableHead>
+              <TableHead>Valeur totale - سعر الكلي</TableHead>
+              <TableHead>Prix moyen - متوسط </TableHead>
+              <TableHead>Actions - تعديلات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -181,26 +181,26 @@ export function StockOutputList({ product, stockOutputs: initialStockOutputs }: 
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="icon" 
                       onClick={() => handleViewDetails(output)}
-                      title="See FIFO Details"
+                      title="Voir les détails - اعرض التفاصيل"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="icon" 
                       onClick={() => handlePrint(output)}
-                      title="Print"
+                      title="Imprimer - طباعة"
                     >
                       <Printer className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="icon" 
                       onClick={() => handleUpdate(output)}
-                      title="Edit"
+                      title="Modifier - تعديل"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

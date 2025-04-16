@@ -107,9 +107,9 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Stock Entry</DialogTitle>
+          <DialogTitle>Modifier l'entrée de stock - تعديل إدخال المخزون </DialogTitle>
           <DialogDescription>
-            Make changes to the stock entry. Click save when you're done.
+          قم بإجراء تغييرات على إدخال المخزون. انقر فوق حفظ عند الانتهاء.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -119,7 +119,7 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantity</FormLabel>
+                  <FormLabel>Quantité - الكمية</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 
@@ -131,7 +131,8 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
                   </FormControl>
                   {stockEntry.remaining_quantity < stockEntry.quantity && (
                     <FormDescription>
-                      Cannot edit quantity as {stockEntry.quantity - stockEntry.remaining_quantity} units have been consumed
+                      Impossible de modifier la quantité car {stockEntry.quantity - stockEntry.remaining_quantity} unité a été consommée.
+                      <br/> لا يمكن تعديل الكمية لأنه تم استهلاك {stockEntry.quantity - stockEntry.remaining_quantity} وحدة
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -144,12 +145,12 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
               name="unitPrice"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Unit Price</FormLabel>
+                  <FormLabel>Prix unitaire - سعر الوحدة</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 
                       step="0.01" 
-                      placeholder="Enter unit price" 
+                      placeholder="سعر الوحدة" 
                       {...field} 
                       onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                     />
@@ -164,7 +165,7 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
               name="entryDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>Date - يوم</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -203,7 +204,7 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Reference - رقم</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Optional notes about this stock entry" {...field} />
                   </FormControl>
@@ -219,10 +220,10 @@ export function EditStockEntryDialog({ stockEntry, open, onOpenChange, onSuccess
                 onClick={handleDelete}
                 disabled={isDeleting || stockEntry.remaining_quantity < stockEntry.quantity}
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? "حذف..." : "حذف"}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save changes"}
+                {isSubmitting ? "حفظ..." : "حفظ"}
               </Button>
             </DialogFooter>
           </form>

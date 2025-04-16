@@ -89,9 +89,11 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Stock Withdrawal</DialogTitle>
+          <DialogTitle> Modifier le retrait de stock - تعديل اخراج المخزون</DialogTitle>
           <DialogDescription>
-            Update the withdrawal record details. When deleted, inventory will be returned to stock.
+          Mettre à jour les détails de l'enregistrement du retrait. Une fois supprimé, l'inventaire sera remis en stock.
+          <br/>
+          تحديث تفاصيل سجل اخراج. عند الحذف، سيتم إرجاع المخزون إلى المخزون.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -101,7 +103,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantity</FormLabel>
+                  <FormLabel>Quantité - الكمية</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 
@@ -116,19 +118,19 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-amber-500 mt-1">
-                    Quantity cannot be changed after creation
+                  لا يمكن تغيير الكمية بعد الإنشاء
                   </p>
                 </FormItem>
               )}
             />
             
             <div>
-              <label className="text-sm font-medium">Total Cost</label>
+              <label className="text-sm font-medium">التكلفة الإجمالية</label>
               <p className="text-muted-foreground p-2 border rounded-md bg-muted/30">
                 ${stockOutput.total_cost.toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                ${(stockOutput.total_cost / stockOutput.total_quantity).toFixed(2)} per unit
+                ${(stockOutput.total_cost / stockOutput.total_quantity).toFixed(2)} لكل وحدة
               </p>
             </div>
             
@@ -137,7 +139,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
               name="outputDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>Date - يوم</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -176,7 +178,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
               name="referenceNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reference Number</FormLabel>
+                  <FormLabel>Reference Num (Optional) الرقم المرجعي (اختياري)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Order #12345" {...field} />
                   </FormControl>
@@ -190,7 +192,7 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>pour : ... من أجل</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Additional information about this withdrawal" {...field} />
                   </FormControl>
@@ -206,10 +208,10 @@ export function EditStockOutputDialog({ stockOutput, open, onOpenChange, onSucce
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? "حذف..." : "حذف"}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save changes"}
+                {isSubmitting ? "حفظ..." : "حفظ"}
               </Button>
             </DialogFooter>
           </form>

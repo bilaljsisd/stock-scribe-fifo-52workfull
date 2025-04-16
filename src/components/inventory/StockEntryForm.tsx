@@ -83,11 +83,11 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
           name="quantity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Quantity</FormLabel>
+              <FormLabel>Quantité - الكمية</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
-                  placeholder="Enter quantity" 
+                  placeholder="Enter quantité" 
                   {...field} 
                   onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                 />
@@ -102,12 +102,12 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
           name="unitPrice"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Unit Price</FormLabel>
+              <FormLabel> Prix unitaire - سعر الوحدة</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
                   step="0.01" 
-                  placeholder="Enter unit price" 
+                  placeholder="سعر الوحدة" 
                   {...field} 
                   onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                 />
@@ -122,7 +122,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
           name="entryDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
+              <FormLabel>Date - التاريخ</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -136,7 +136,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
-                        <span>Pick a date</span>
+                        <span>اختر يوم</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
@@ -161,12 +161,15 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>Informations - معلومات </FormLabel>
               <FormControl>
-                <Textarea placeholder="Optional notes about this stock entry" {...field} />
+                <Textarea placeholder=" nom ou numéro de facture acheter
+              الاسم، أو رقم فاتورة الشراء
+              ملاحظات اختيارية حول إدخال المخزون" {...field} />
               </FormControl>
               <FormDescription>
-                Add any additional information about this inventory entry
+              nom ou numéro de facture acheter
+              الاسم، أو رقم فاتورة الشراء
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -174,7 +177,7 @@ export function StockEntryForm({ product, onSuccess }: StockEntryFormProps) {
         />
         
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding..." : "Add Stock Entry"}
+          {isSubmitting ? "Adding..." : "Ajouter + زيادة"}
         </Button>
       </form>
     </Form>

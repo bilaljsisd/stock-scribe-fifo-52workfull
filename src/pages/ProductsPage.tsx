@@ -46,7 +46,7 @@ const ProductsPage = () => {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search products..."
+                  placeholder="Recherche de produits..ابحث عن المنتجات"
                   className="w-full md:w-[250px] pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -54,7 +54,7 @@ const ProductsPage = () => {
               </div>
               <Button asChild>
                 <Link to="/products/new">
-                  <Plus className="h-4 w-4 mr-2" /> Add Product
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter un produit - إضافة منتج
                 </Link>
               </Button>
             </div>
@@ -82,7 +82,7 @@ const ProductsPage = () => {
                   </p>
                   <Button asChild className="mt-4">
                     <Link to="/products/new">
-                      <Plus className="h-4 w-4 mr-2" /> Add Product
+                      <Plus className="h-4 w-4 mr-2" /> AAjouter un produit - إضافة منتج
                     </Link>
                   </Button>
                 </>

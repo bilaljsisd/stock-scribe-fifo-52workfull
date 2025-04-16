@@ -69,7 +69,7 @@ const Index = () => {
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <Button asChild>
               <Link to="/products/new">
-                <Plus className="h-4 w-4 mr-2" /> Add Product
+                <Plus className="h-4 w-4 mr-2" />Ajouter un produit - إضافة منتج
               </Link>
             </Button>
           </div>
@@ -79,14 +79,14 @@ const Index = () => {
             <Card className="animate-fade-in">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Products
+                  عدد المنتوجات
                 </CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
-                  in your inventory
+                  في المخزن
                 </p>
               </CardContent>
             </Card>
@@ -94,14 +94,14 @@ const Index = () => {
             <Card className="animate-fade-in">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Inventory Value
+                  القيمة الحالية للمخزن
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(totalInventoryValue)}</div>
                 <p className="text-xs text-muted-foreground">
-                  based on FIFO valuation
+                  FIFO 
                 </p>
               </CardContent>
             </Card>
@@ -109,7 +109,7 @@ const Index = () => {
             <Card className="animate-fade-in">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Recent Activity
+                  جميع العمليات
                 </CardTitle>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +127,7 @@ const Index = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{transactions.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  total transactions
+                  معاملة
                 </p>
               </CardContent>
             </Card>
@@ -137,18 +137,19 @@ const Index = () => {
             {/* Recent transactions */}
             <Card className="col-span-1 animate-fade-in">
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle>اخر التعاملات</CardTitle>
                 <CardDescription>
-                  Your latest inventory transactions
+                  Operation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {recentTransactions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Package className="h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">No transactions yet</h3>
+                    <h3 className="text-lg font-medium">فارغ | vide</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Add some products and start managing your inventory
+                    أضف بعض المنتجات وابدأ في إدارة مخزونك 
+                    Ajoutez des produits et commencez à gérer vos stocks
                     </p>
                   </div>
                 ) : (
@@ -170,7 +171,7 @@ const Index = () => {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">
-                              {transaction.type === 'entry' ? 'Added' : 'Removed'} {transaction.quantity} {product?.units || 'units'}
+                              {transaction.quantity} {product?.units || 'units'} {transaction.type === 'entry' ? ' + زيادة' : ' - اخراج'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {product?.name || 'Unknown Product'}
@@ -185,7 +186,7 @@ const Index = () => {
                     
                     <Button asChild variant="outline" size="sm" className="w-full mt-4">
                       <Link to="/reports">
-                        View All Transactions <ChevronRight className="h-4 w-4 ml-2" />
+                        جميع التعاملات  <ChevronRight className="h-4 w-4 ml-2" />
                       </Link>
                     </Button>
                   </div>
@@ -196,18 +197,20 @@ const Index = () => {
             {/* Low stock items */}
             <Card className="col-span-1 animate-fade-in">
               <CardHeader>
-                <CardTitle>Low Stock Alert</CardTitle>
+                <CardTitle>مخزون صغير faible stock</CardTitle>
                 <CardDescription>
-                  Products with less than 10 units remaining
+                Produits avec moins de 10 unités restantes
+                المنتجات التي بها أقل من 10 وحدات متبقية
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {lowStockProducts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <TrendingUp className="h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">No low stock items</h3>
+                    <h3 className="text-lg font-medium">لا توجد عناصر منخفضة المخزون</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      All your products have sufficient inventory
+                    Tous vos produits ont des stocks suffisants
+                    تحتوي جميع منتجاتك على مخزون كافٍ
                     </p>
                   </div>
                 ) : (
@@ -246,10 +249,10 @@ const Index = () => {
           {products.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Your Products</h2>
-                <Button asChild variant="ghost" size="sm">
+                <h2 className="text-xl font-semibold">منتجاتك  Vos produits</h2>
+                <Button asChild variant="outline" size="sm">
                   <Link to="/products">
-                    View All <ChevronRight className="h-4 w-4 ml-2" />
+                  Voir tout عرض الكل <ChevronRight className="h-4 w-4 ml-2" />
                   </Link>
                 </Button>
               </div>

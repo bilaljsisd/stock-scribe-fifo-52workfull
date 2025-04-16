@@ -91,11 +91,11 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           name="quantity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Quantity</FormLabel>
+              <FormLabel>Quantité - الكمية</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
-                  placeholder="Enter quantity to withdraw" 
+                  placeholder="أدخل الكمية المراد إخراجها" 
                   {...field} 
                   onChange={(e) => field.onChange(e.target.valueAsNumber)}
                 />
@@ -113,7 +113,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           name="outputDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
+              <FormLabel>Date - التاريخ</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -127,7 +127,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
-                        <span>Pick a date</span>
+                        <span>اختر يوم ..</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
@@ -152,12 +152,12 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           name="referenceNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Reference Number (Optional)</FormLabel>
+              <FormLabel>Reference Num (Optional) الرقم المرجعي (اختياري)</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Order #12345" {...field} />
               </FormControl>
               <FormDescription>
-                Order number, invoice number, etc.
+              رقم الطلب، رقم الفاتورة، إلخ.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -169,9 +169,9 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes (Optional)</FormLabel>
+              <FormLabel>pour : ... من أجل</FormLabel>
               <FormControl>
-                <Textarea placeholder="Additional information about this withdrawal" {...field} />
+                <Textarea placeholder=" معلومات إضافية حول هذا السحب " {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -179,7 +179,7 @@ export function StockOutputForm({ product, onSuccess }: StockOutputFormProps) {
         />
         
         <Button type="submit" disabled={isSubmitting} variant="default">
-          {isSubmitting ? "Processing..." : "Withdraw Stock (FIFO)"}
+          {isSubmitting ? "Processing..." : " Retirer le stock  - إخراج المخزون "}
         </Button>
       </form>
     </Form>

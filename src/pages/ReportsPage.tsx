@@ -138,12 +138,12 @@ const ReportsPage = () => {
     let printContent = `
       <html>
       <head>
-        <title>Inventory Transactions Report</title>
+        <title>Rapport sur les transactions d'inventaire <br/> تقرير معاملات المخزون</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #333; }
+          h1 { color: #333;   display: flex;   justify-content: center;   align-items: center;   text-align: center;   flex-direction: column;  }
           .summary { display: flex; margin-bottom: 20px; flex-wrap: wrap; }
-          .summary-card { border: 1px solid #ddd; padding: 15px; margin-right: 15px; margin-bottom: 15px; border-radius: 5px; width: 200px; }
+          .summary-card { border: 1px solid #ddd; padding: 15px; margin-right: 15px; margin-bottom: 15px; border-radius: 5px; width: auto; }
           .summary-title { font-size: 14px; color: #666; margin-bottom: 5px; }
           .summary-value { font-size: 20px; font-weight: bold; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -161,35 +161,35 @@ const ReportsPage = () => {
         </style>
       </head>
       <body>
-        <h1>Inventory Transactions Report ${includeDetails ? '(Advanced)' : ''}</h1>
+        <h1>Rapport sur les transactions d'inventaire <br/> تقرير معاملات المخزون ${includeDetails ? '(Advanced)' : ''}</h1>
         
         <div class="filters">
           <p><strong>Filters:</strong> 
-            Product: ${productFilter === 'all' ? 'All Products' : products.find(p => p.id === productFilter)?.name || productFilter}, 
-            Type: ${typeFilter === 'all' ? 'All Types' : typeFilter === 'entry' ? 'Stock Entries' : 'Stock Withdrawals'},
-            Date Range: ${dateRange?.from ? formatDate(dateRange.from) : 'All time'} ${dateRange?.to ? `to ${formatDate(dateRange.to)}` : ''}
+            Produit/المنتج: ${productFilter === 'all' ? 'tout les Produit' : products.find(p => p.id === productFilter)?.name || productFilter}, 
+            Type/نوع: ${typeFilter === 'all' ? 'tout les Types' : typeFilter === 'entry' ? 'Stock Entries' : 'Stock Withdrawals'},
+            Période de temps/الفترة الزمنية: ${dateRange?.from ? formatDate(dateRange.from) : 'tout le temps'} ${dateRange?.to ? `to ${formatDate(dateRange.to)}` : ''}
           </p>
         </div>
         
         <div class="summary">
           <div class="summary-card">
-            <div class="summary-title">Total Transactions</div>
+            <div class="summary-title">Nombre total de transactions <br/> عدد المعاملات الإجمالي</div>
             <div class="summary-value">${filteredTransactions.length}</div>
           </div>
           <div class="summary-card">
-            <div class="summary-title">Stock Entries</div>
+            <div class="summary-title">Le nombre d'entrées de stock <br/> عدد إدخالات المخزون</div>
             <div class="summary-value">${entriesCount}</div>
           </div>
           <div class="summary-card">
-            <div class="summary-title">Stock Withdrawals</div>
+            <div class="summary-title">Le nombre de retrée de stock <br/> عدد عمليات سحب المخزون</div>
             <div class="summary-value">${outputsCount}</div>
           </div>
           <div class="summary-card">
-            <div class="summary-title">Total Cost of Entries</div>
+            <div class="summary-title">Coût total des entrées <br/> التكلفة الإجمالية للإدخالات</div>
             <div class="summary-value">${formatCurrency(entriesTotal)}</div>
           </div>
           <div class="summary-card">
-            <div class="summary-title">Total Cost of Withdrawals</div>
+            <div class="summary-title">Coût total des retraits <br/> التكلفة الإجمالية للاخراج</div>
             <div class="summary-value">${formatCurrency(outputsTotal)}</div>
           </div>
         </div>
@@ -197,14 +197,14 @@ const ReportsPage = () => {
         <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Product</th>
-              <th>Quantity</th>
-              <th>Units</th>
-              <th>Price</th>
-              <th>Total Value</th>
-              <th>Notes</th>
+              <th>Date - يوم</th>
+              <th>Type - نوع</th>
+              <th>Produit - المنتج</th>
+              <th>Quantité - الكمية</th>
+              <th>Unité - الوحدة</th>
+              <th>Prix unitaire - سعر الوحدة</th>
+              <th>Valeur totale - سعر الكلي</th>
+              <th>Pour - الملاحظات</th>
             </tr>
           </thead>
           <tbody>
@@ -244,15 +244,15 @@ const ReportsPage = () => {
           printContent += `
             <tr>
               <td colspan="8">
-                <div class="fifo-details-header">FIFO Allocation Details:</div>
+                <div class="fifo-details-header">Détails de l'allocation - تفاصيل التخصيص:</div>
                 <table class="fifo-details-table">
                   <thead>
                     <tr>
-                      <th>Entry Date</th>
-                      <th>Notes</th>
-                      <th>Quantity</th>
-                      <th>Unit Cost</th>
-                      <th>Subtotal</th>
+                      <th>Date d'entrée - تاريخ الإدخال</th>
+                      <th>Pour - الملاحظات</th>
+                      <th>Quantité - الكمية</th>
+                      <th>Prix unitaire - سعر الوحدة</th>
+                      <th>Sous-total - المجموع الفرعي</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -285,8 +285,8 @@ const ReportsPage = () => {
         </table>
         
         <div style="margin-top: 30px; text-align: center;">
-          <p>Report generated on ${formatDate(new Date())}</p>
-          <button onclick="window.print();" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Report</button>
+          <p>${formatDate(new Date())} تقرير تم إنشاؤه في </p>
+          <button onclick="window.print();" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 5px; cursor: pointer;">Imprimer le rapport طباعة التقرير</button>
         </div>
       </body>
       </html>
@@ -357,17 +357,17 @@ const ReportsPage = () => {
               <DropdownMenuTrigger asChild>
                 <Button className="flex items-center gap-2">
                   <Printer className="h-4 w-4" />
-                  Print Report
+                  Imprimer le rapport طباعة التقرير
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => printReport(false)}>
                   <Printer className="h-4 w-4 mr-2" />
-                  <span>Standard Print</span>
+                  <span>Impression standard طباعة عادية</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => prepareAdvancedPrinting()}>
                   <FileText className="h-4 w-4 mr-2" />
-                  <span>Advanced Print (with FIFO Details)</span>
+                  <span>Impression détaillée (avec détails FIFO) طباعة مفصلة (مع تفاصيل FIFO)</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -377,7 +377,7 @@ const ReportsPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Transactions
+                Nombre total de transactions <br/> عدد المعاملات الإجمالي
                 </CardTitle>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -400,7 +400,7 @@ const ReportsPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Stock Entries
+                Le nombre d'entrées de stock <br/> عدد إدخالات المخزون
                 </CardTitle>
                 <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -412,7 +412,7 @@ const ReportsPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Stock Withdrawals
+                Le nombre de retrée de stock <br/> عدد عمليات سحب المخزون
                 </CardTitle>
                 <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -424,7 +424,7 @@ const ReportsPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Cost of Entries
+                Coût total des entrées <br/> التكلفة الإجمالية للإدخالات
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -436,7 +436,7 @@ const ReportsPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Cost of Withdrawals
+                Coût total des retraits <br/> التكلفة الإجمالية للاخراج
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -448,22 +448,22 @@ const ReportsPage = () => {
           
           <Card>
             <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
+              <CardTitle>Historique des opérations سجل المعاملات</CardTitle>
               <CardDescription>
-                A complete history of all inventory movements using FIFO method
+              Un historique complet de tous les mouvements de stocks selon la méthode FIFO
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Product</label>
+                    <label className="text-sm font-medium mb-1 block">Produit - المنتج</label>
                     <Select value={productFilter} onValueChange={setProductFilter}>
                       <SelectTrigger>
-                        <SelectValue placeholder="All Products" />
+                        <SelectValue placeholder="Tous les produits/جميع المنتجات" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Products</SelectItem>
+                        <SelectItem value="all">Tous les produits/جميع المنتجات</SelectItem>
                         {products.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name}
@@ -474,21 +474,21 @@ const ReportsPage = () => {
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Transaction Type</label>
+                    <label className="text-sm font-medium mb-1 block">Type de transaction/نوع المعاملة</label>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger>
-                        <SelectValue placeholder="All Types" />
+                        <SelectValue placeholder="Tous les types/جميع الأنواع" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="entry">Stock Entries</SelectItem>
-                        <SelectItem value="output">Stock Withdrawals</SelectItem>
+                        <SelectItem value="all">Tous les types/جميع الأنواع</SelectItem>
+                        <SelectItem value="entry">Entrées en stock/إدخالات المخزون</SelectItem>
+                        <SelectItem value="output">Retrait des stocks/خروج المخزون</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Date Range</label>
+                    <label className="text-sm font-medium mb-1 block">Période de temps/الفترة الزمنية</label>
                     <DateRangePicker 
                       value={dateRange}
                       onChange={setDateRange}
@@ -498,7 +498,7 @@ const ReportsPage = () => {
                 
                 <div className="flex items-end gap-2">
                   <Button variant="outline" onClick={clearFilters}>
-                    Clear Filters
+                  Effacer les filtres <br/> إلغاء الفلتر
                   </Button>
                   <Button 
                     variant="outline" 
@@ -506,7 +506,7 @@ const ReportsPage = () => {
                     className="md:hidden flex items-center gap-2"
                   >
                     <Printer className="h-4 w-4" />
-                    Print
+                    Imprimer / طباعة
                   </Button>
                 </div>
               </div>
@@ -525,9 +525,11 @@ const ReportsPage = () => {
                   >
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                   </svg>
-                  <h3 className="text-lg font-medium">No transactions found</h3>
+                  <h3 className="text-lg font-medium">Aucune opération n'a été trouvée<br/>لم يتم العثور على أي عمليات </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Try changing your filters or add some inventory transactions
+                  Essayez de modifier vos filtres ou d'ajouter des transactions d'inventaire
+                  <br/>
+                  حاول تغيير عوامل التصفية أو إضافة بعض معاملات المخزون
                   </p>
                 </div>
               ) : (
@@ -536,14 +538,14 @@ const ReportsPage = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead></TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Units</TableHead>
-                        <TableHead>Unit Price</TableHead>
-                        <TableHead>Total Value</TableHead>
-                        <TableHead>Notes</TableHead>
+                        <TableHead>Date - يوم</TableHead>
+                        <TableHead>Type - نوع</TableHead>
+                        <TableHead>Produit - المنتج</TableHead>
+                        <TableHead>Quantité - الكمية</TableHead>
+                        <TableHead>Unité - الوحدة</TableHead>
+                        <TableHead>Prix unitaire - سعر الوحدة</TableHead>
+                        <TableHead>Valeur totale - سعر الكلي</TableHead>
+                        <TableHead>Pour - الملاحظات</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

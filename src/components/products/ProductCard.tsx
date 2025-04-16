@@ -16,7 +16,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardHeader>
       <CardContent className="pb-0">
         <div className="flex items-center justify-between mb-4 text-sm">
-          <span className="text-muted-foreground">SKU: {product.sku}</span>
+          <span className="text-muted-foreground">Code produit: {product.sku}</span>
           <span 
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               product.current_stock > 10 
@@ -36,22 +36,22 @@ export function ProductCard({ product }: ProductCardProps) {
         
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
           <div>
-            <p className="text-muted-foreground">Stock</p>
-            <p className="font-medium">{product.current_stock} units: {product.units}</p>
+            <p className="text-muted-foreground">عدد</p>
+            <p className="font-medium">{product.current_stock} {product.units}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Avg. Cost</p>
+            <p className="text-muted-foreground">متوسط. التكلفة</p>
             <p className="font-medium">{formatCurrency(product.average_cost)}</p>
           </div>
           <div className="col-span-2">
-            <p className="text-muted-foreground">Total Value</p>
+            <p className="text-muted-foreground">قيمة المنتج الموجود في المخزون</p>
             <p className="font-medium">{formatCurrency(product.current_stock * Number(product.average_cost))}</p>
           </div>
         </div>
         
         {product.description && (
           <div className="text-sm mb-4">
-            <p className="text-muted-foreground mb-1">Description</p>
+            <p className="text-muted-foreground mb-1">Details الوصف</p>
             <p className="line-clamp-2">{product.description}</p>
           </div>
         )}
@@ -61,7 +61,7 @@ export function ProductCard({ product }: ProductCardProps) {
           to={`/products/${product.id}`}
           className="w-full text-center text-sm px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          View Details
+           Voir les détails - عرض التفاصيل 
         </Link>
       </CardFooter>
     </Card>

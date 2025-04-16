@@ -9,7 +9,7 @@ export function Header() {
       <div className="flex h-16 items-center px-4 md:px-6 gap-4 md:gap-6">
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-inventory-700" />
-          <span className="text-lg font-semibold">StockScribe FIFO</span>
+          <span className="text-lg font-semibold">SoftZero | Stockage</span>
         </div>
         <nav className="ml-auto flex items-center gap-2 md:gap-4">
           <Button asChild variant="ghost" size="sm">
